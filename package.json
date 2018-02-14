@@ -1,0 +1,11 @@
+{
+  "name": "web-stick-adventure",
+  "version": "1.0.0",
+  "scripts": {
+    "lint": "tslint classes/*.ts -t verbose"
+  },
+  "devDependencies": {
+    "tslint": "^5.9.1",
+    "typescript": "^2.2.2"
+  }
+}

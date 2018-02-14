@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "module": "amd",
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "sourceMap": true,
+        "outFile": "wsa.js"
+    },
+    "include": [
+        "classes/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules/"
+    ]
+}

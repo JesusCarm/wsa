@@ -1,0 +1,6 @@
+{
+    "problemMatcher": {
+        "base": "$tslint5",
+        "fileLocation": "relative"
+    }
+}
