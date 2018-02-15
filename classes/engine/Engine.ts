@@ -1,6 +1,8 @@
+/// <reference path="../canvas/Canvas.ts" />
 module WSA {
     export interface IEngine{
         update(): void
+        resolveCollisions(): void
         draw(): void
         loop(timestamp: number): void
         start():void
@@ -11,9 +13,13 @@ module WSA {
         private lastRender: number = 0;
         private progress: number = 0;
         private entities: IEntity[];
+        private collisionResolver: ICollisionResolver;
+        private idCounter: number;
 
         constructor(private canvas: ICanvas){
+            this.idCounter = 0;
             this.entities = [];
+            this.collisionResolver = new CollisionResolver();
         }
 
         start(): void {
@@ -25,6 +31,7 @@ module WSA {
             this.update();
             this.eraseCanvas();
             this.draw();
+            this.resolveCollisions();
             this.lastRender = timestamp;
             
             window.requestAnimationFrame(this.loop);
@@ -36,6 +43,10 @@ module WSA {
             });
         }
 
+        resolveCollisions(): void{
+            this.collisionResolver.checkCollisions(this.entities);
+        }
+
         draw(): void {
             this.entities.forEach(entity => {
                 entity.draw();
@@ -43,6 +54,7 @@ module WSA {
         }
 
         registerEntity(entity: IEntity):void {
+            entity.id = this.idCounter++;
             this.entities.push(entity);
         }
 

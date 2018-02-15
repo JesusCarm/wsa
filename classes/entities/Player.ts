@@ -1,15 +1,17 @@
+/// <reference path="../controllers/Keyboard" />
 module WSA {
 
-    export interface IPlayer extends IEntity{
+    export interface IPlayer extends IRigidEntity{
 
     }
 
-    export class Player extends Entity implements IPlayer{
+    export class Player extends RigidEntity implements IPlayer{
         private shape: IRectangle;
         private velocity: number;
 
-        constructor(private controller: IKeyboard, ctx: CanvasRenderingContext2D, construct: IRectangleConstruct){
-            super();
+        constructor(private controller: IKeyboard, ctx: CanvasRenderingContext2D, construct: IRectangleConstruct, rigidBody: IRigidBody){
+            super(rigidBody);
+            this.hasRigidBody = true;
             this.velocity = 5;
             this.shape = new Rect(ctx, construct);
             this.controller.init();
@@ -21,10 +23,11 @@ module WSA {
 
         update(progress: number):void{
             let pressedKeys = this.controller.getKeys();
-            this.updateShape(pressedKeys, progress);
+            this.updateShapePosition(pressedKeys, progress);
+            this.updateRigidBody();
         }
 
-        private updateShape(pressedKeys:IPressedKeys, progress: number){
+        private updateShapePosition(pressedKeys:IPressedKeys, progress: number){
             let p = progress * this.velocity;
             if(pressedKeys.down){
                 this.shape.y += p;
@@ -36,7 +39,15 @@ module WSA {
             }else if(pressedKeys.left){
                 this.shape.x -= p;
             }
-            
+        }
+
+        private updateRigidBody(){
+            this.rigidBody.bounds = {
+                l: this.shape.x,
+                r: this.shape.x + this.shape.width,
+                t: this.shape.y,
+                b: this.shape.y + this.shape.height
+            }
         }
     }
 }

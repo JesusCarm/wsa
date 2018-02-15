@@ -61,6 +61,72 @@ var WSA;
 })(WSA || (WSA = {}));
 var WSA;
 (function (WSA) {
+    class Entity {
+        constructor() {
+            this.hasRigidBody = false;
+        }
+        get id() {
+            return this._id;
+        }
+        set id(id) {
+            this._id = id;
+        }
+    }
+    WSA.Entity = Entity;
+})(WSA || (WSA = {}));
+/// <reference path="../entities/Entity" />
+var WSA;
+(function (WSA) {
+    class RigidEntity {
+        constructor(_rigidBody) {
+            this._rigidBody = _rigidBody;
+            this.hasRigidBody = true;
+        }
+        get rigidBody() {
+            return this._rigidBody;
+        }
+        set rigidBody(rigidBody) {
+            this._rigidBody = rigidBody;
+        }
+        get bounds() {
+            return this._bounds;
+        }
+        set bounds(bounds) {
+            this._bounds = bounds;
+        }
+    }
+    WSA.RigidEntity = RigidEntity;
+})(WSA || (WSA = {}));
+/// <reference path="../entities/RigidEntity" />
+var WSA;
+(function (WSA) {
+    class CollisionResolver {
+        checkCollisions(entities) {
+            entities.forEach((entity, _i, entities) => {
+                if (entity.hasRigidBody)
+                    this.checkCollision(entity.id, entity.rigidBody, entities);
+            });
+        }
+        checkCollision(current, rigidBody, entities) {
+            entities.forEach((entity, _i) => {
+                if (!entity.hasRigidBody || current === entity.id)
+                    return;
+                let targetRigidBody = entity.rigidBody;
+                if (!rigidBody.colliders.some((collider) => collider === targetRigidBody.bodyType))
+                    return;
+                this.collisionChecker(rigidBody.bounds, targetRigidBody.bounds);
+            });
+        }
+        collisionChecker(bounds, targetBounds) {
+            if (bounds.l > targetBounds.r || bounds.r < targetBounds.l || bounds.t > targetBounds.b || bounds.b < targetBounds.t)
+                return;
+            console.log("collision");
+        }
+    }
+    WSA.CollisionResolver = CollisionResolver;
+})(WSA || (WSA = {}));
+var WSA;
+(function (WSA) {
     class Driver {
         constructor(canvas) {
             this.engine = new WSA.Engine(canvas);
@@ -72,6 +138,7 @@ var WSA;
     }
     WSA.Driver = Driver;
 })(WSA || (WSA = {}));
+/// <reference path="../canvas/Canvas.ts" />
 var WSA;
 (function (WSA) {
     class Engine {
@@ -84,10 +151,13 @@ var WSA;
                 this.update();
                 this.eraseCanvas();
                 this.draw();
+                this.resolveCollisions();
                 this.lastRender = timestamp;
                 window.requestAnimationFrame(this.loop);
             };
+            this.idCounter = 0;
             this.entities = [];
+            this.collisionResolver = new WSA.CollisionResolver();
         }
         start() {
             window.requestAnimationFrame(this.loop);
@@ -97,12 +167,16 @@ var WSA;
                 entity.update(this.progress);
             });
         }
+        resolveCollisions() {
+            this.collisionResolver.checkCollisions(this.entities);
+        }
         draw() {
             this.entities.forEach(entity => {
                 entity.draw();
             });
         }
         registerEntity(entity) {
+            entity.id = this.idCounter++;
             this.entities.push(entity);
         }
         eraseCanvas() {
@@ -111,18 +185,42 @@ var WSA;
     }
     WSA.Engine = Engine;
 })(WSA || (WSA = {}));
+/// <reference path="../controllers/Keyboard" />
 var WSA;
 (function (WSA) {
-    class Entity {
+    class Box extends WSA.RigidEntity {
+        constructor(ctx, construct, rigidBody) {
+            super(rigidBody);
+            this.hasRigidBody = true;
+            this.shape = new WSA.Rect(ctx, construct);
+            this.updateRigidBody();
+        }
+        draw() {
+            this.shape.draw();
+        }
+        update(progress) {
+            progress;
+            //this.updateRigidBody();
+        }
+        updateRigidBody() {
+            this.rigidBody.bounds = {
+                l: this.shape.x,
+                r: this.shape.x + this.shape.width,
+                t: this.shape.y,
+                b: this.shape.y + this.shape.height
+            };
+        }
     }
-    WSA.Entity = Entity;
+    WSA.Box = Box;
 })(WSA || (WSA = {}));
+/// <reference path="../controllers/Keyboard" />
 var WSA;
 (function (WSA) {
-    class Player extends WSA.Entity {
-        constructor(controller, ctx, construct) {
-            super();
+    class Player extends WSA.RigidEntity {
+        constructor(controller, ctx, construct, rigidBody) {
+            super(rigidBody);
             this.controller = controller;
+            this.hasRigidBody = true;
             this.velocity = 5;
             this.shape = new WSA.Rect(ctx, construct);
             this.controller.init();
@@ -132,9 +230,10 @@ var WSA;
         }
         update(progress) {
             let pressedKeys = this.controller.getKeys();
-            this.updateShape(pressedKeys, progress);
+            this.updateShapePosition(pressedKeys, progress);
+            this.updateRigidBody();
         }
-        updateShape(pressedKeys, progress) {
+        updateShapePosition(pressedKeys, progress) {
             let p = progress * this.velocity;
             if (pressedKeys.down) {
                 this.shape.y += p;
@@ -149,9 +248,52 @@ var WSA;
                 this.shape.x -= p;
             }
         }
+        updateRigidBody() {
+            this.rigidBody.bounds = {
+                l: this.shape.x,
+                r: this.shape.x + this.shape.width,
+                t: this.shape.y,
+                b: this.shape.y + this.shape.height
+            };
+        }
     }
     WSA.Player = Player;
 })(WSA || (WSA = {}));
+var WSA;
+(function (WSA) {
+    let rigidBodyType;
+    (function (rigidBodyType) {
+        rigidBodyType[rigidBodyType["wall"] = 0] = "wall";
+        rigidBodyType[rigidBodyType["entity"] = 1] = "entity";
+    })(rigidBodyType = WSA.rigidBodyType || (WSA.rigidBodyType = {}));
+    class RigidBody {
+        constructor(_bodyType, _colliders) {
+            this._bodyType = _bodyType;
+            this._colliders = _colliders;
+        }
+        get bodyType() {
+            return this._bodyType;
+        }
+        set bodyType(bodyType) {
+            this._bodyType = bodyType;
+        }
+        get colliders() {
+            return this._colliders;
+        }
+        set colliders(colliders) {
+            this._colliders = colliders;
+        }
+        get bounds() {
+            return this._bounds;
+        }
+        set bounds(bounds) {
+            this._bounds = bounds;
+        }
+    }
+    WSA.RigidBody = RigidBody;
+})(WSA || (WSA = {}));
+/// <reference path="../engine/Driver.ts" />
+/// <reference path="../rigidBody/RigidBody.ts" />
 var WSA;
 (function (WSA) {
     class Game {
@@ -164,6 +306,8 @@ var WSA;
         init() {
             let player = this.createPlayer();
             this.driver.registerEntity(player);
+            let box = this.createBox();
+            this.driver.registerEntity(box);
         }
         createPlayer() {
             let playerConstruct = {
@@ -173,7 +317,19 @@ var WSA;
                 height: 20,
                 fillStyle: "red"
             };
-            return new WSA.Player(new WSA.Keyboard(), this.canvas.getContext(), playerConstruct);
+            let playerBody = new WSA.RigidBody(WSA.rigidBodyType.entity, [WSA.rigidBodyType.entity, WSA.rigidBodyType.wall]);
+            return new WSA.Player(new WSA.Keyboard(), this.canvas.getContext(), playerConstruct, playerBody);
+        }
+        createBox() {
+            let boxConstruct = {
+                x: 50,
+                y: 50,
+                width: 20,
+                height: 20,
+                fillStyle: "blue"
+            };
+            let boxBody = new WSA.RigidBody(WSA.rigidBodyType.entity, []);
+            return new WSA.Box(this.canvas.getContext(), boxConstruct, boxBody);
         }
     }
     WSA.Game = Game;
