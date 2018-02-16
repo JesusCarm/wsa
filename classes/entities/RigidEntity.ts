@@ -1,29 +1,84 @@
 /// <reference path="../entities/Entity" />
+/// <reference path="../rigidBody/RigidBody" />
 module WSA {
 
     export interface IRigidEntity extends IEntity{
         rigidBody: IRigidBody
-        bounds: IBodyBounds
+        colliding: boolean
+        setTargetCollider(targetBody:IRigidBody): void
+        resolveCollision():void
     }
 
-    export abstract class RigidEntity implements IRigidEntity {
-        _bounds: any;
+    export interface IRigidEntityState extends IEntityState {
+        bounds: IBodyBounds[]
+    }
+
+    export abstract class RigidEntity extends Entity implements IRigidEntity  {
+        abstract resolveCollision()
+        abstract update(progress: number)
+
         id: number;
-        constructor(private _rigidBody){}
+        public hasRigidBody: boolean = true;
+        protected oldState: IRigidEntityState;
+        protected shape: IRectangle;
+        private _colliding: boolean;
+        private _targetColliders: IRigidBody;        
+        
+        constructor(private _rigidBody){
+            super();
+            this.oldState.bounds = [];
+            this._targetColliders = null;
+        }
+
+        draw(): void{
+            this.shape.draw();
+        }
+
         get rigidBody(): IRigidBody {
             return this._rigidBody;
         }
         set rigidBody(rigidBody: IRigidBody){
             this._rigidBody = rigidBody;
         }
-        get bounds(): IBodyBounds {
-            return this._bounds;
+
+        get targetCollider():IRigidBody {
+            return this._targetColliders;
         }
-        set bounds(bounds: IBodyBounds){
-            this._bounds = bounds;
+        setTargetCollider(targetBody: IRigidBody){
+            this.colliding = true;
+            this._targetColliders = targetBody;
         }
-        public hasRigidBody: boolean = true;
-        abstract update(progress:number)
-        abstract draw()
+        get colliding(): boolean {
+            return this._colliding;
+        }
+        set colliding(colliding: boolean){
+            this._colliding = colliding;
+        }
+
+        protected saveState(){
+            super.saveState();
+            this.oldState.bounds.push(Object.assign({},this.rigidBody.bounds));
+        }
+        protected restoreState(){
+            super.restoreState();
+            this.rigidBody.bounds = this.oldState.bounds.pop();
+        }
+        
+        protected updateRigidBody(bounds: IBodyBounds){
+            this.rigidBody.bounds = bounds;
+        }
+        protected updateShapePosition(pressedKeys:IPressedKeys, progress: number, velocity: number){
+            let p = progress * velocity;
+            if(pressedKeys.down){
+                this.shape.y += p;
+            }else if(pressedKeys.up){
+                this.shape.y -= p;
+            }
+            if(pressedKeys.right){
+                this.shape.x += p;
+            }else if(pressedKeys.left){
+                this.shape.x -= p;
+            }
+        }
     }
 }

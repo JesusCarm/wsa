@@ -16,6 +16,8 @@ module WSA {
             this.driver.registerEntity(player);
             let box = this.createBox();
             this.driver.registerEntity(box);
+            let weapon = this.createWeaponBox();
+            this.driver.registerEntity(weapon);
         }
 
         private createPlayer(){
@@ -24,9 +26,9 @@ module WSA {
                 y: 0,
                 width: 20,
                 height: 20,
-                fillStyle: "red"};
-            let playerBody = new RigidBody(rigidBodyType.entity, [rigidBodyType.entity, rigidBodyType.wall]);  
-            return new WSA.Player(new WSA.Keyboard(), this.canvas.getContext(), playerConstruct, playerBody);
+                fillStyle: "green"};
+            let playerBody = new RigidBody(rigidBodyType.entity, [rigidBodyType.weapons, rigidBodyType.wall]);  
+            return new WSA.Player(new WSA.Keyboard(), this.canvas.getContext(), playerConstruct, playerBody, 100);
         }
         private createBox(){
             let boxConstruct: IRectangleConstruct = {
@@ -35,7 +37,17 @@ module WSA {
                 width: 20,
                 height: 20,
                 fillStyle: "blue"};
-            let boxBody = new RigidBody(rigidBodyType.entity, []); 
+            let boxBody = new RigidBody(rigidBodyType.wall, []); 
+            return new WSA.Box(this.canvas.getContext(), boxConstruct, boxBody);
+        }
+        private createWeaponBox(){
+            let boxConstruct: IRectangleConstruct = {
+                x: 100,
+                y: 100,
+                width: 20,
+                height: 20,
+                fillStyle: "red"};
+            let boxBody = new RigidBody(rigidBodyType.weapons, []); 
             return new WSA.Box(this.canvas.getContext(), boxConstruct, boxBody);
         }
     }

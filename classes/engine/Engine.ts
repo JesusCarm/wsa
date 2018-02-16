@@ -30,8 +30,8 @@ module WSA {
             this.progress = (timestamp - this.lastRender) / 16;
             this.update();
             this.eraseCanvas();
-            this.draw();
             this.resolveCollisions();
+            this.draw();
             this.lastRender = timestamp;
             
             window.requestAnimationFrame(this.loop);
@@ -45,6 +45,9 @@ module WSA {
 
         resolveCollisions(): void{
             this.collisionResolver.checkCollisions(this.entities);
+            // this.entities.forEach((entity: IRigidEntity) => {
+            //     entity.resolveCollision();
+            // });
         }
 
         draw(): void {

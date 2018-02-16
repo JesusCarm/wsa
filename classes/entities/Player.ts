@@ -1,53 +1,64 @@
 /// <reference path="../controllers/Keyboard" />
 module WSA {
 
-    export interface IPlayer extends IRigidEntity{
+    export interface IPlayer extends IRigidEntity {
+        life: number
+    }
 
+    export interface IPlayerState extends IRigidEntityState {
+        shape: IRectangle[]
+        resolveCollision():void
     }
 
     export class Player extends RigidEntity implements IPlayer{
-        private shape: IRectangle;
+        public life: number;
+        protected oldState: IPlayerState;
         private velocity: number;
 
-        constructor(private controller: IKeyboard, ctx: CanvasRenderingContext2D, construct: IRectangleConstruct, rigidBody: IRigidBody){
+        constructor(private controller: IKeyboard, ctx: CanvasRenderingContext2D, construct: IRectangleConstruct, rigidBody: IRigidBody, life:number){
             super(rigidBody);
             this.hasRigidBody = true;
-            this.velocity = 5;
+            this.velocity = 1;
             this.shape = new Rect(ctx, construct);
             this.controller.init();
+            this.life = life;
+            this.oldState.shape = [];
         }
-        
-        draw(): void{
-            this.shape.draw();
+
+        resolveCollision(){
+            if(!this.colliding) return;
+            
+            if(this.targetCollider.bodyType === rigidBodyType.wall){
+                this.restoreState();
+            } else if(this.targetCollider.bodyType === rigidBodyType.weapons){
+                this.life--;
+                console.log(this.life);
+            }
+            this.colliding = false;
+            this.setTargetCollider(null);
         }
 
         update(progress: number):void{
             let pressedKeys = this.controller.getKeys();
-            this.updateShapePosition(pressedKeys, progress);
-            this.updateRigidBody();
-        }
-
-        private updateShapePosition(pressedKeys:IPressedKeys, progress: number){
-            let p = progress * this.velocity;
-            if(pressedKeys.down){
-                this.shape.y += p;
-            }else if(pressedKeys.up){
-                this.shape.y -= p;
-            }
-            if(pressedKeys.right){
-                this.shape.x += p;
-            }else if(pressedKeys.left){
-                this.shape.x -= p;
-            }
-        }
-
-        private updateRigidBody(){
-            this.rigidBody.bounds = {
+            this.saveState();
+            this.updateShapePosition(pressedKeys, progress, this.velocity);
+            this.updateRigidBody({
                 l: this.shape.x,
                 r: this.shape.x + this.shape.width,
                 t: this.shape.y,
                 b: this.shape.y + this.shape.height
-            }
+            });
         }
+
+        protected saveState(){
+            super.saveState();
+            this.oldState.shape.push(Object.assign({},this.shape));
+        }
+        protected restoreState(){
+            super.restoreState();
+            Object.assign(this.shape,this.oldState.shape.pop())
+            //this.shape = this.oldState.shape.pop();
+        }
+
     }
 }

@@ -64,6 +64,9 @@ var WSA;
     class Entity {
         constructor() {
             this.hasRigidBody = false;
+            this.oldState = {
+                hasRigidBody: []
+            };
         }
         get id() {
             return this._id;
@@ -71,16 +74,63 @@ var WSA;
         set id(id) {
             this._id = id;
         }
+        saveState() {
+            this.oldState.hasRigidBody.push(this.hasRigidBody);
+        }
+        restoreState() {
+            this.hasRigidBody = this.oldState.hasRigidBody.pop();
+        }
     }
     WSA.Entity = Entity;
 })(WSA || (WSA = {}));
-/// <reference path="../entities/Entity" />
 var WSA;
 (function (WSA) {
-    class RigidEntity {
+    let rigidBodyType;
+    (function (rigidBodyType) {
+        rigidBodyType[rigidBodyType["wall"] = 0] = "wall";
+        rigidBodyType[rigidBodyType["entity"] = 1] = "entity";
+        rigidBodyType[rigidBodyType["weapons"] = 2] = "weapons";
+    })(rigidBodyType = WSA.rigidBodyType || (WSA.rigidBodyType = {}));
+    class RigidBody {
+        constructor(_bodyType, _colliders) {
+            this._bodyType = _bodyType;
+            this._colliders = _colliders;
+        }
+        get bodyType() {
+            return this._bodyType;
+        }
+        set bodyType(bodyType) {
+            this._bodyType = bodyType;
+        }
+        get colliders() {
+            return this._colliders;
+        }
+        set colliders(colliders) {
+            this._colliders = colliders;
+        }
+        get bounds() {
+            return this._bounds;
+        }
+        set bounds(bounds) {
+            this._bounds = bounds;
+        }
+    }
+    WSA.RigidBody = RigidBody;
+})(WSA || (WSA = {}));
+/// <reference path="../entities/Entity" />
+/// <reference path="../rigidBody/RigidBody" />
+var WSA;
+(function (WSA) {
+    class RigidEntity extends WSA.Entity {
         constructor(_rigidBody) {
+            super();
             this._rigidBody = _rigidBody;
             this.hasRigidBody = true;
+            this.oldState.bounds = [];
+            this._targetColliders = null;
+        }
+        draw() {
+            this.shape.draw();
         }
         get rigidBody() {
             return this._rigidBody;
@@ -88,11 +138,44 @@ var WSA;
         set rigidBody(rigidBody) {
             this._rigidBody = rigidBody;
         }
-        get bounds() {
-            return this._bounds;
+        get targetCollider() {
+            return this._targetColliders;
         }
-        set bounds(bounds) {
-            this._bounds = bounds;
+        setTargetCollider(targetBody) {
+            this.colliding = true;
+            this._targetColliders = targetBody;
+        }
+        get colliding() {
+            return this._colliding;
+        }
+        set colliding(colliding) {
+            this._colliding = colliding;
+        }
+        saveState() {
+            super.saveState();
+            this.oldState.bounds.push(Object.assign({}, this.rigidBody.bounds));
+        }
+        restoreState() {
+            super.restoreState();
+            this.rigidBody.bounds = this.oldState.bounds.pop();
+        }
+        updateRigidBody(bounds) {
+            this.rigidBody.bounds = bounds;
+        }
+        updateShapePosition(pressedKeys, progress, velocity) {
+            let p = progress * velocity;
+            if (pressedKeys.down) {
+                this.shape.y += p;
+            }
+            else if (pressedKeys.up) {
+                this.shape.y -= p;
+            }
+            if (pressedKeys.right) {
+                this.shape.x += p;
+            }
+            else if (pressedKeys.left) {
+                this.shape.x -= p;
+            }
         }
     }
     WSA.RigidEntity = RigidEntity;
@@ -104,23 +187,24 @@ var WSA;
         checkCollisions(entities) {
             entities.forEach((entity, _i, entities) => {
                 if (entity.hasRigidBody)
-                    this.checkCollision(entity.id, entity.rigidBody, entities);
+                    this.checkCollision(entity, entities);
             });
         }
-        checkCollision(current, rigidBody, entities) {
-            entities.forEach((entity, _i) => {
-                if (!entity.hasRigidBody || current === entity.id)
+        checkCollision(currentEntity, entities) {
+            entities.forEach((targetEntity, _i) => {
+                if (!targetEntity.hasRigidBody || currentEntity.id === targetEntity.id)
                     return;
-                let targetRigidBody = entity.rigidBody;
-                if (!rigidBody.colliders.some((collider) => collider === targetRigidBody.bodyType))
+                let targetRigidBody = targetEntity.rigidBody;
+                if (!currentEntity.rigidBody.colliders.some((collider) => collider === targetRigidBody.bodyType))
                     return;
-                this.collisionChecker(rigidBody.bounds, targetRigidBody.bounds);
+                if (this.collisionChecker(currentEntity.rigidBody.bounds, targetRigidBody.bounds)) {
+                    currentEntity.setTargetCollider(targetEntity.rigidBody);
+                    currentEntity.resolveCollision();
+                }
             });
         }
         collisionChecker(bounds, targetBounds) {
-            if (bounds.l > targetBounds.r || bounds.r < targetBounds.l || bounds.t > targetBounds.b || bounds.b < targetBounds.t)
-                return;
-            console.log("collision");
+            return !(bounds.l > targetBounds.r || bounds.r < targetBounds.l || bounds.t > targetBounds.b || bounds.b < targetBounds.t);
         }
     }
     WSA.CollisionResolver = CollisionResolver;
@@ -150,8 +234,8 @@ var WSA;
                 this.progress = (timestamp - this.lastRender) / 16;
                 this.update();
                 this.eraseCanvas();
-                this.draw();
                 this.resolveCollisions();
+                this.draw();
                 this.lastRender = timestamp;
                 window.requestAnimationFrame(this.loop);
             };
@@ -169,6 +253,9 @@ var WSA;
         }
         resolveCollisions() {
             this.collisionResolver.checkCollisions(this.entities);
+            // this.entities.forEach((entity: IRigidEntity) => {
+            //     entity.resolveCollision();
+            // });
         }
         draw() {
             this.entities.forEach(entity => {
@@ -189,26 +276,27 @@ var WSA;
 var WSA;
 (function (WSA) {
     class Box extends WSA.RigidEntity {
+        //private shape: IRectangle;
         constructor(ctx, construct, rigidBody) {
             super(rigidBody);
             this.hasRigidBody = true;
             this.shape = new WSA.Rect(ctx, construct);
-            this.updateRigidBody();
+            //this.updateRigidBody();
         }
         draw() {
             this.shape.draw();
         }
         update(progress) {
             progress;
-            //this.updateRigidBody();
-        }
-        updateRigidBody() {
-            this.rigidBody.bounds = {
+            this.updateRigidBody({
                 l: this.shape.x,
                 r: this.shape.x + this.shape.width,
                 t: this.shape.y,
                 b: this.shape.y + this.shape.height
-            };
+            });
+            //this.updateRigidBody();
+        }
+        resolveCollision() {
         }
     }
     WSA.Box = Box;
@@ -217,80 +305,51 @@ var WSA;
 var WSA;
 (function (WSA) {
     class Player extends WSA.RigidEntity {
-        constructor(controller, ctx, construct, rigidBody) {
+        constructor(controller, ctx, construct, rigidBody, life) {
             super(rigidBody);
             this.controller = controller;
             this.hasRigidBody = true;
-            this.velocity = 5;
+            this.velocity = 1;
             this.shape = new WSA.Rect(ctx, construct);
             this.controller.init();
+            this.life = life;
+            this.oldState.shape = [];
         }
-        draw() {
-            this.shape.draw();
+        resolveCollision() {
+            if (!this.colliding)
+                return;
+            if (this.targetCollider.bodyType === WSA.rigidBodyType.wall) {
+                this.restoreState();
+            }
+            else if (this.targetCollider.bodyType === WSA.rigidBodyType.weapons) {
+                this.life--;
+                console.log(this.life);
+            }
+            this.colliding = false;
+            this.setTargetCollider(null);
         }
         update(progress) {
             let pressedKeys = this.controller.getKeys();
-            this.updateShapePosition(pressedKeys, progress);
-            this.updateRigidBody();
-        }
-        updateShapePosition(pressedKeys, progress) {
-            let p = progress * this.velocity;
-            if (pressedKeys.down) {
-                this.shape.y += p;
-            }
-            else if (pressedKeys.up) {
-                this.shape.y -= p;
-            }
-            if (pressedKeys.right) {
-                this.shape.x += p;
-            }
-            else if (pressedKeys.left) {
-                this.shape.x -= p;
-            }
-        }
-        updateRigidBody() {
-            this.rigidBody.bounds = {
+            this.saveState();
+            this.updateShapePosition(pressedKeys, progress, this.velocity);
+            this.updateRigidBody({
                 l: this.shape.x,
                 r: this.shape.x + this.shape.width,
                 t: this.shape.y,
                 b: this.shape.y + this.shape.height
-            };
+            });
+        }
+        saveState() {
+            super.saveState();
+            this.oldState.shape.push(Object.assign({}, this.shape));
+        }
+        restoreState() {
+            super.restoreState();
+            Object.assign(this.shape, this.oldState.shape.pop());
+            //this.shape = this.oldState.shape.pop();
         }
     }
     WSA.Player = Player;
-})(WSA || (WSA = {}));
-var WSA;
-(function (WSA) {
-    let rigidBodyType;
-    (function (rigidBodyType) {
-        rigidBodyType[rigidBodyType["wall"] = 0] = "wall";
-        rigidBodyType[rigidBodyType["entity"] = 1] = "entity";
-    })(rigidBodyType = WSA.rigidBodyType || (WSA.rigidBodyType = {}));
-    class RigidBody {
-        constructor(_bodyType, _colliders) {
-            this._bodyType = _bodyType;
-            this._colliders = _colliders;
-        }
-        get bodyType() {
-            return this._bodyType;
-        }
-        set bodyType(bodyType) {
-            this._bodyType = bodyType;
-        }
-        get colliders() {
-            return this._colliders;
-        }
-        set colliders(colliders) {
-            this._colliders = colliders;
-        }
-        get bounds() {
-            return this._bounds;
-        }
-        set bounds(bounds) {
-            this._bounds = bounds;
-        }
-    }
-    WSA.RigidBody = RigidBody;
 })(WSA || (WSA = {}));
 /// <reference path="../engine/Driver.ts" />
 /// <reference path="../rigidBody/RigidBody.ts" />
@@ -308,6 +367,8 @@ var WSA;
             this.driver.registerEntity(player);
             let box = this.createBox();
             this.driver.registerEntity(box);
+            let weapon = this.createWeaponBox();
+            this.driver.registerEntity(weapon);
         }
         createPlayer() {
             let playerConstruct = {
@@ -315,10 +376,10 @@ var WSA;
                 y: 0,
                 width: 20,
                 height: 20,
-                fillStyle: "red"
+                fillStyle: "green"
             };
-            let playerBody = new WSA.RigidBody(WSA.rigidBodyType.entity, [WSA.rigidBodyType.entity, WSA.rigidBodyType.wall]);
-            return new WSA.Player(new WSA.Keyboard(), this.canvas.getContext(), playerConstruct, playerBody);
+            let playerBody = new WSA.RigidBody(WSA.rigidBodyType.entity, [WSA.rigidBodyType.weapons, WSA.rigidBodyType.wall]);
+            return new WSA.Player(new WSA.Keyboard(), this.canvas.getContext(), playerConstruct, playerBody, 100);
         }
         createBox() {
             let boxConstruct = {
@@ -328,7 +389,18 @@ var WSA;
                 height: 20,
                 fillStyle: "blue"
             };
-            let boxBody = new WSA.RigidBody(WSA.rigidBodyType.entity, []);
+            let boxBody = new WSA.RigidBody(WSA.rigidBodyType.wall, []);
+            return new WSA.Box(this.canvas.getContext(), boxConstruct, boxBody);
+        }
+        createWeaponBox() {
+            let boxConstruct = {
+                x: 100,
+                y: 100,
+                width: 20,
+                height: 20,
+                fillStyle: "red"
+            };
+            let boxBody = new WSA.RigidBody(WSA.rigidBodyType.weapons, []);
             return new WSA.Box(this.canvas.getContext(), boxConstruct, boxBody);
         }
     }

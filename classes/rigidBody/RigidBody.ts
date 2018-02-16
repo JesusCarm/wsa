@@ -1,7 +1,8 @@
 module WSA {
     export enum rigidBodyType {
         "wall",
-        "entity"
+        "entity",
+        "weapons"
     }
 
     export interface IBodyBounds {
