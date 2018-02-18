@@ -1,23 +1,23 @@
-/// <reference path="../engine/Driver.ts" />
-/// <reference path="../rigidBody/RigidBody.ts" />
+/// <reference path="../Core/engine/World.ts" />
+/// <reference path="../Core/rigidBody/RigidBody.ts" />
 module WSA {
-    export class Game {
-        private driver: IDriver;
+    export abstract class Game {
+        protected world: IWorld;
         private canvas: ICanvas;
-        constructor(body:HTMLBodyElement){    
-            this.canvas = new WSA.Canvas();
-            this.driver = new WSA.Driver(this.canvas);   
+        constructor(body:HTMLBodyElement, size:{w:number,h:number}){    
+            this.canvas = new WSA.Canvas(size);
+            this.world = new WSA.World(this.canvas);   
             this.canvas.init(body);
             this.init();
         }
 
         init(){
             let player = this.createPlayer();
-            this.driver.registerEntity(player);
+            this.world.registerEntity(player);
             let box = this.createBox();
-            this.driver.registerEntity(box);
+            this.world.registerEntity(box);
             let weapon = this.createWeaponBox();
-            this.driver.registerEntity(weapon);
+            this.world.registerEntity(weapon);
         }
 
         private createPlayer(){
@@ -28,7 +28,7 @@ module WSA {
                 height: 20,
                 fillStyle: "green"};
             let playerBody = new RigidBody(rigidBodyType.entity, [rigidBodyType.weapons, rigidBodyType.wall]);  
-            return new WSA.Player(new WSA.Keyboard(), this.canvas.getContext(), playerConstruct, playerBody, 100);
+            return new WSA.Platform.Player(new WSA.Keyboard(), this.canvas.getContext(), playerConstruct, playerBody, 100);
         }
         private createBox(){
             let boxConstruct: IRectangleConstruct = {

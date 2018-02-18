@@ -1,5 +1,5 @@
-/// <reference path="../controllers/Keyboard" />
-module WSA {
+/// <reference path="../../Core/controllers/Keyboard" />
+module WSA.Platform {
 
     export interface IPlayer extends IRigidEntity {
         life: number
@@ -41,8 +41,8 @@ module WSA {
         update(progress: number):void{
             let pressedKeys = this.controller.getKeys();
             this.saveState();
-            this.updateShapePosition(pressedKeys, progress, this.velocity);
-            this.updateRigidBody({
+            this.updateShapePosition(pressedKeys, progress);
+            this.updateRigidBodyBounds({
                 l: this.shape.x,
                 r: this.shape.x + this.shape.width,
                 t: this.shape.y,
@@ -58,6 +58,19 @@ module WSA {
             super.restoreState();
             Object.assign(this.shape,this.oldState.shape.pop())
             //this.shape = this.oldState.shape.pop();
+        }
+        protected updateShapePosition(pressedKeys:IPressedKeys, progress: number){
+            let p = progress * this.velocity;
+            if(pressedKeys.down){
+                this.shape.y += p;
+            }else if(pressedKeys.up){
+                this.shape.y -= p;
+            }
+            if(pressedKeys.right){
+                this.shape.x += p;
+            }else if(pressedKeys.left){
+                this.shape.x -= p;
+            }
         }
 
     }

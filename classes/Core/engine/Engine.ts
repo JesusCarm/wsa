@@ -61,6 +61,10 @@ module WSA {
             this.entities.push(entity);
         }
 
+        registerForce(force){
+            
+        }
+
         eraseCanvas(): void{
             this.canvas.clear();
         }

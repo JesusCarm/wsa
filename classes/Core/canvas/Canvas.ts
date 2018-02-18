@@ -11,8 +11,8 @@ module WSA {
 
         private canvas: HTMLCanvasElement;
 
-        constructor(){
-            this.canvas = this.createCanvas();
+        constructor(size:{w:number, h:number}){
+            this.canvas = this.createCanvas(size);
         }
 
         public init(body: HTMLBodyElement){            
@@ -31,8 +31,12 @@ module WSA {
             this.getContext().clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
 
-        private createCanvas(){
-            return document.createElement("canvas");
+        private createCanvas(size:{w:number,h:number}){
+            let canvas = document.createElement("canvas");
+            canvas.height = size.h;
+            canvas.width = size.w;
+            canvas.style.backgroundColor = "lightgrey";
+            return canvas;
         }
     }
 }

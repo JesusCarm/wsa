@@ -64,21 +64,9 @@ module WSA {
             this.rigidBody.bounds = this.oldState.bounds.pop();
         }
         
-        protected updateRigidBody(bounds: IBodyBounds){
+        protected updateRigidBodyBounds(bounds: IBodyBounds){
             this.rigidBody.bounds = bounds;
         }
-        protected updateShapePosition(pressedKeys:IPressedKeys, progress: number, velocity: number){
-            let p = progress * velocity;
-            if(pressedKeys.down){
-                this.shape.y += p;
-            }else if(pressedKeys.up){
-                this.shape.y -= p;
-            }
-            if(pressedKeys.right){
-                this.shape.x += p;
-            }else if(pressedKeys.left){
-                this.shape.x -= p;
-            }
-        }
+        
     }
 }

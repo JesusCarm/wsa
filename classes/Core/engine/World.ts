@@ -1,8 +1,9 @@
 module WSA {
-    export interface IDriver{
+    export interface IWorld{
         registerEntity(entity:IEntity): void
+        registerForce(force)
     }
-    export class Driver implements IDriver{
+    export class World implements IWorld{
         private engine: IEngine;
         constructor(canvas: ICanvas){
             this.engine = new Engine(canvas);
@@ -11,6 +12,9 @@ module WSA {
         
         registerEntity(entity:IEntity): void{
             this.engine.registerEntity(entity);
+        }
+        registerForce(force){
+
         }
     }
 }
