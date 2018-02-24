@@ -1,7 +1,42 @@
 <head>
     <title>stick adventure</title>
+    <!-- <script src="lib/Vector/Vector2.js"></script> -->
+    <script>
+    document.onload = function(){
+      //  window.
+        // document.onkeydown = function(e){
+        //     if(e.keyCode === 37){
+        //         left.nodeValue = 1;
+        //     };
+        //     if(e.keyCode === 38){
+        //         top.nodeValue = 1;
+        //     };
+        //     if(e.keyCode === 39){
+        //         right.nodeValue = 1;
+        //     };
+        //     if(e.keyCode === 40){
+        //         bottom.nodeValue = 1;
+        //     };
+        // }
+        
+    
+    }</script>
     <script src="./wsa.js"></script>
+    <style>.controllers{
+        position: absolute;
+        top:0;
+        left: 0;
+        height:50px;    
+    
+    }</style>
+    
 </head>
 <body>
     <div>Stick Adventure</div>
+    <div class="controllers">
+        <input type="number" id="top" value="0">
+        <input type="number" id="left" value="0">
+        <input type="number" id="bottom" value="0">
+        <input type="number" id="right" value="0">
+    </div>
 </body>

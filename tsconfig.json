@@ -2,7 +2,7 @@
     "compilerOptions": {
         "target": "es6",
         "module": "amd",
-        "noUnusedLocals": true,
+        "noUnusedLocals": false,
         "noUnusedParameters": true,
         "sourceMap": true,
         "outFile": "wsa.js"

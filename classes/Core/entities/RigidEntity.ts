@@ -1,37 +1,29 @@
-/// <reference path="../entities/Entity" />
-/// <reference path="../rigidBody/RigidBody" />
+/// <reference path="../entities/Entity.ts" />
+/// <reference path="../rigidBody/RigidBody.ts" />
 module WSA {
 
     export interface IRigidEntity extends IEntity{
         rigidBody: IRigidBody
         colliding: boolean
-        setTargetCollider(targetBody:IRigidBody): void
-        resolveCollision():void
-    }
-
-    export interface IRigidEntityState extends IEntityState {
-        bounds: IBodyBounds[]
-    }
+        //setTargetCollider(targetBody:IRigidBody): void
+        resolveCollision(targetEntity: IRigidEntity):void
+    }   
 
     export abstract class RigidEntity extends Entity implements IRigidEntity  {
-        abstract resolveCollision()
-        abstract update(progress: number)
+        abstract resolveCollision(targetEntity: IRigidEntity)
+        abstract update()
 
         id: number;
         public hasRigidBody: boolean = true;
-        protected oldState: IRigidEntityState;
+        public stateChange:boolean = false;
         protected shape: IRectangle;
         private _colliding: boolean;
-        private _targetColliders: IRigidBody;        
+        //private _targetColliders: IRigidBody;        
         
         constructor(private _rigidBody){
             super();
-            this.oldState.bounds = [];
-            this._targetColliders = null;
-        }
-
-        draw(): void{
-            this.shape.draw();
+            //this._targetColliders = null;
+            window.game.world.registerRigidEntity(this);
         }
 
         get rigidBody(): IRigidBody {
@@ -41,13 +33,13 @@ module WSA {
             this._rigidBody = rigidBody;
         }
 
-        get targetCollider():IRigidBody {
-            return this._targetColliders;
-        }
-        setTargetCollider(targetBody: IRigidBody){
-            this.colliding = true;
-            this._targetColliders = targetBody;
-        }
+        // get targetCollider():IRigidBody {
+        //     return this._targetColliders;
+        // }
+        // setTargetCollider(targetBody: IRigidBody){
+        //     this.colliding = true;
+        //     this._targetColliders = targetBody;
+        // }
         get colliding(): boolean {
             return this._colliding;
         }
@@ -55,16 +47,7 @@ module WSA {
             this._colliding = colliding;
         }
 
-        protected saveState(){
-            super.saveState();
-            this.oldState.bounds.push(Object.assign({},this.rigidBody.bounds));
-        }
-        protected restoreState(){
-            super.restoreState();
-            this.rigidBody.bounds = this.oldState.bounds.pop();
-        }
-        
-        protected updateRigidBodyBounds(bounds: IBodyBounds){
+        protected updateRigidBodyCoords(bounds: IBodyBounds){
             this.rigidBody.bounds = bounds;
         }
         

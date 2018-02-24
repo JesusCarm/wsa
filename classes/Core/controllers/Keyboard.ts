@@ -5,6 +5,7 @@ module WSA {
     right: boolean
     up: boolean
     down: boolean
+    space: boolean
   }
 
   export interface IKeyboard {
@@ -16,7 +17,8 @@ module WSA {
     'right' = 68,
     'left' = 65,
     'up' = 87,
-    'down' = 83
+    'down' = 83,
+    'space' = 32
   }
 
   export class Keyboard implements IKeyboard {
@@ -27,7 +29,8 @@ module WSA {
         left: false,
         right: false,
         up: false,
-        down: false
+        down: false,
+        space: false
       }
     }
 

@@ -1,12 +1,14 @@
 /// <reference path="../canvas/Canvas.ts" />
 module WSA {
     export interface IEngine{
-        update(): void
-        resolveCollisions(): void
-        draw(): void
+        // update(): void
+        // resolveCollisions(): void
+        // draw(): void
         loop(timestamp: number): void
         start():void
         registerEntity(entity: IEntity):void
+        registerMovingEntity(entity: IEntity):void
+        registerRigidEntity(entity:IRigidEntity): void
     }
 
     export class Engine implements IEngine {
@@ -15,45 +17,80 @@ module WSA {
         private entities: IEntity[];
         private collisionResolver: ICollisionResolver;
         private idCounter: number;
+        private movingEntities: IEntity[];
+        private rigidEntities: IRigidEntity[];
 
         constructor(private canvas: ICanvas){
             this.idCounter = 0;
             this.entities = [];
+            this.movingEntities = [];
+            this.rigidEntities = [];
             this.collisionResolver = new CollisionResolver();
         }
 
         start(): void {
+            this.initEntities();
             window.requestAnimationFrame(this.loop)
         }
 
         loop = (timestamp: number): void => {
             this.progress = (timestamp - this.lastRender) / 16;
-            this.update();
             this.eraseCanvas();
-            this.resolveCollisions();
+            this.getNewState();
+            //this.resolveCollisions();
+            this.update();
             this.draw();
             this.lastRender = timestamp;
             
             window.requestAnimationFrame(this.loop);
         }
 
-        update(): void {
+        private initEntities(): void {
             this.entities.forEach(entity => {
-                entity.update(this.progress);
+                entity.init();
+            });
+            this.rigidEntities.forEach(entity => {
+                entity.init();
+            });
+            this.movingEntities.forEach(entity => {
+                entity.init();
             });
         }
 
-        resolveCollisions(): void{
-            this.collisionResolver.checkCollisions(this.entities);
-            // this.entities.forEach((entity: IRigidEntity) => {
-            //     entity.resolveCollision();
-            // });
+        private getNewState():void{
+            this.movingEntities && this.movingEntities.forEach((entity: IActor) => {
+                entity.getNewState(this.progress);
+            });
         }
 
-        draw(): void {
+        private update(): void {
+            this.movingEntities.forEach(entity => {
+                entity.update();
+            });
+        }
+
+        private resolveCollisions(): void{
+            this.collisionResolver.checkCollisions(this.movingEntities);
+        }
+
+        private draw(): void {
             this.entities.forEach(entity => {
                 entity.draw();
             });
+            this.rigidEntities.forEach(entity => {
+                entity.draw();
+            });
+            this.movingEntities.forEach(entity => {
+                entity.draw();
+            });
+        }
+
+        registerRigidEntity(entity:IRigidEntity){
+            this.rigidEntities.push(entity);
+        }
+
+        registerMovingEntity(entity: IEntity):void{
+            this.movingEntities.push(entity);
         }
 
         registerEntity(entity: IEntity):void {
@@ -62,7 +99,7 @@ module WSA {
         }
 
         registerForce(force){
-            
+            return force;
         }
 
         eraseCanvas(): void{

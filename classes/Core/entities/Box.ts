@@ -1,25 +1,29 @@
-/// <reference path="../controllers/Keyboard" />
-module WSA {
+/// <reference path="../controllers/Keyboard.ts" />
+/// <reference path="RigidStaticEntity.ts" />
 
-    export class Box extends RigidEntity implements IRigidEntity{
+module WSA {
+    export class Box extends RigidStaticEntity implements IRigidStaticEntity{
         
         constructor(ctx: CanvasRenderingContext2D, construct: IRectangleConstruct, rigidBody: IRigidBody){
             super(rigidBody);
             this.hasRigidBody = true;
             this.shape = new Rect(ctx, construct);
+            this.update();
+        }
+        getNewState(progress:number){
+            progress;
         }
         
         draw(): void{
             this.shape.draw();
         }
 
-        update(progress: number):void{
-            progress;
-            this.updateRigidBodyBounds({
-                l: this.shape.x,
-                r: this.shape.x + this.shape.width,
-                t: this.shape.y,
-                b: this.shape.y + this.shape.height
+        update():void{
+            this.updateRigidBodyCoords({
+                l: this.shape.pos.x,
+                r: this.shape.pos.x + this.shape.width,
+                t: this.shape.pos.y,
+                b: this.shape.pos.y + this.shape.height
             });
         }
 

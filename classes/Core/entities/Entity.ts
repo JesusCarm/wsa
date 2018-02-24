@@ -2,8 +2,9 @@ module WSA {
     export interface IEntity {
         id: number
         hasRigidBody: boolean
+        init()
         draw(): void
-        update(progress:number)
+        update()
     }
     export interface IEntityState {
         hasRigidBody: boolean[]
@@ -19,19 +20,15 @@ module WSA {
                 hasRigidBody: []
             };
         }
-        abstract update(progress:number)
-        abstract draw()
+        // abstract getNewState(progress:number)
+        init(){}
         get id(){
             return this._id;
         }
         set id(id: number){
             this._id = id;
         }
-        protected saveState(){
-            this.oldState.hasRigidBody.push(this.hasRigidBody);
-        }
-        protected restoreState(){
-            this.hasRigidBody = this.oldState.hasRigidBody.pop();
-        }
+        abstract update()
+        abstract draw()
     }
 }
