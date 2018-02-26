@@ -250,41 +250,38 @@ var WSA;
             this.addElementToGrid(this.grid, x1, y1, rigidEntity);
         }
         positionActor(pos, v, actor) {
-            let v2 = pos.add(pos, v), x1 = v2.getX(), y1 = v2.getY();
-            let areaX = x1 / 32;
-            let areaY = y1 / 32;
-            let ax = Math.floor(areaX);
-            let ay = Math.floor(areaY);
-            let offsetX = areaX - ax;
-            let offsetY = areaY - ay;
-            let diffs = [];
+            let v2 = pos.add(pos, v);
+            let actorArea = {
+                x: v2.x / 32,
+                y: v2.y / 32
+            };
+            let ax = Math.floor(actorArea.x), ay = Math.floor(actorArea.y);
+            let offset = {
+                x: actorArea.x - ax,
+                y: actorArea.y - ay
+            };
+            let populatedAreas = this.getPopulatedAreas(ax, ay, offset);
+            if (populatedAreas.length) {
+                let closest = this.getClosestArea(actor, populatedAreas);
+                this.resolveCollision(actor, closest.pop());
+                if (populatedAreas.length) {
+                    this.positionActor(actor.shape.pos, actor.v, actor);
+                }
+            }
+        }
+        getPopulatedAreas(ax, ay, offset) {
             let populatedAreas = [];
             this.getPopulatedArea(ax, ay, populatedAreas);
-            // if(this.grid[ax] && this.grid[ax][ay]) populatedAreas.push(this.grid[ax][ay]);
-            // this.checkStaticPosition(diffs, ax, ay, actor)
-            if (offsetX !== 0) {
+            if (offset.x !== 0) {
                 this.getPopulatedArea(ax + 1, ay, populatedAreas);
-                //this.checkStaticPosition(diffs, ax + 1, ay, actor);
             }
-            if (offsetY !== 0) {
+            if (offset.y !== 0) {
                 this.getPopulatedArea(ax, ay + 1, populatedAreas);
-                //this.checkStaticPosition(diffs, ax, ay + 1, actor);
             }
-            if (offsetX !== 0 && offsetY !== 0) {
+            if (offset.x !== 0 && offset.y !== 0) {
                 this.getPopulatedArea(ax + 1, ay + 1, populatedAreas);
-                //this.checkStaticPosition(diffs, ax + 1, ay + 1, actor);
             }
-            getClosestArea();
-            if (diffs.length) {
-                return diffs.reduce((prev, current) => {
-                    return {
-                        dy: Math.abs(prev.dy) >= Math.abs(current.dy) ? current.dy : prev.dy,
-                        dx: Math.abs(prev.dx) >= Math.abs(current.dx) ? current.dx : prev.dx
-                    };
-                });
-            }
-            else
-                return null;
+            return populatedAreas;
         }
         getPopulatedArea(ax, ay, populatedAreas) {
             if (this.grid[ax] && this.grid[ax][ay])
@@ -292,24 +289,26 @@ var WSA;
         }
         getClosestArea(actor, populatedAreas) {
             let actorCenter = actor.rigidBody.center;
-            populatedAreas.forEach((area) => {
-                let distance = this.vector2.
-                ;
-                let areaCenter = area.center;
-                areaCenter.
-                ;
+            let closest = [];
+            let currentDistance;
+            populatedAreas.forEach((current) => {
+                let distance = WSA.Vector2.distance(current.rigidBody.center, actorCenter);
+                if (currentDistance) {
+                    if (distance < currentDistance) {
+                        currentDistance = distance;
+                        closest = [];
+                        closest.push(current);
+                    }
+                    else if (distance === currentDistance) {
+                        closest.push(current);
+                    }
+                }
+                else {
+                    currentDistance = distance;
+                    closest.push(current);
+                }
             });
-            return populatedAreas.map((area) => {
-                let areaCenter = area.center;
-                areaCenter.
-                ;
-            });
-        }
-        checkStaticPosition(diffs, ax, ay, actor) {
-            if (this.grid[ax] && this.grid[ax][ay])
-                diffs.push(this.resolveCollitionActorStaticEntity(actor, this.grid[ax][ay]));
-            else
-                this.addElementToGrid(this.actorsGrid, ax, ay, actor);
+            return closest;
         }
         addElementToGrid(grid, x, y, rigidEntity) {
             if (grid[x])
@@ -318,46 +317,49 @@ var WSA;
                 console.log('no entry on the grid');
         }
         createEmptyGrid() {
-            let ARRAY_SIZE = (this.size.w / this.gridUnit) + 1;
+            let ARRAY_SIZE = Math.floor(this.size.w / this.gridUnit) + 1;
             let a = new Array(ARRAY_SIZE);
             for (var i = 0; i < ARRAY_SIZE; i++) {
                 a[i] = [];
             }
             return a;
         }
-        resolveCollitionActorStaticEntity(actor, rigidEntity) {
-            let dy = actor.v.y, dx = actor.v.x;
-            let bounds = rigidEntity.rigidBody.bounds;
-            let actorBounds = actor.rigidBody.bounds;
-            let c1 = rigidEntity.rigidBody.center, c2 = actor.rigidBody.center;
+        resolveCollision(actor, rigidEntity) {
+            let c1 = rigidEntity.rigidBody.center, c2 = actor.rigidBody.center, actorV = actor.v;
             if (Math.abs(c1.x - c2.x) > Math.abs(c1.y - c2.y)) {
-                // horizontal collision
-                //console.log('horizontal collision');
-                if (actorBounds.l >= bounds.r) {
-                    // actor is at the right
-                    dx = bounds.r - actorBounds.l;
-                }
-                else if (actorBounds.r <= bounds.l) {
-                    // actor is at the left
-                    dx = bounds.l - actorBounds.r;
-                }
+                actorV.x = this.resolveHorizontalCollision(actor, rigidEntity);
             }
             else {
-                // vertical collision
-                //console.log('vertical collision');
-                if (actorBounds.t >= bounds.b) {
-                    // actor is at the bottom
-                    dy = bounds.b - actorBounds.t;
-                }
-                else if (actorBounds.b <= bounds.t) {
-                    // actor is at the top
-                    dy = bounds.t - actorBounds.b;
-                }
+                actorV.y = this.resolveVerticalCollision(actor, rigidEntity);
             }
-            return {
-                dy: dy,
-                dx: dx
-            };
+        }
+        resolveHorizontalCollision(actor, rigidEntity) {
+            let dx = actor.v.x;
+            let bounds = rigidEntity.rigidBody.bounds;
+            let actorBounds = actor.rigidBody.bounds;
+            if (actorBounds.l >= bounds.r) {
+                // actor is at the right
+                return bounds.r - actorBounds.l;
+            }
+            else if (actorBounds.r <= bounds.l) {
+                // actor is at the left
+                return bounds.l - actorBounds.r;
+            }
+            return dx;
+        }
+        resolveVerticalCollision(actor, rigidEntity) {
+            let dy = actor.v.y;
+            let bounds = rigidEntity.rigidBody.bounds;
+            let actorBounds = actor.rigidBody.bounds;
+            if (actorBounds.t >= bounds.b) {
+                // actor is at the bottom
+                return bounds.b - actorBounds.t;
+            }
+            else if (actorBounds.b <= bounds.t) {
+                // actor is at the top
+                return bounds.t - actorBounds.b;
+            }
+            return dy;
         }
     }
     WSA.Grid = Grid;
@@ -655,11 +657,12 @@ var WSA;
         placeOnTheGrid() {
             if (this.v.equals(WSA.Vector2.ZERO))
                 return;
-            let diffPos = window.game.grid.positionActor(this.shape.pos, this.v, this);
-            if (diffPos) {
-                this.v = new WSA.Vector2(diffPos.dx, diffPos.dy);
-                console.log(this.v);
-            }
+            window.game.grid.positionActor(this.shape.pos, this.v, this);
+            // let diffPos = window.game.grid.positionActor(this.shape.pos, this.v, this);
+            // if(diffPos){
+            //     this.v = new Vector2(diffPos.dx, diffPos.dy);
+            //     console.log(this.v);
+            // }
         }
     }
     WSA.Actor = Actor;
@@ -763,6 +766,14 @@ var WSA;
             this.world.registerRigidEntity(box);
             let box2 = this.createBox(64, 64);
             this.world.registerRigidEntity(box2);
+            let box3 = this.createBox(96, 32);
+            this.world.registerRigidEntity(box3);
+            let box4 = this.createBox(128, 128);
+            this.world.registerRigidEntity(box4);
+            let box5 = this.createBox(128, 160);
+            this.world.registerRigidEntity(box5);
+            let box6 = this.createBox(160, 160);
+            this.world.registerRigidEntity(box6);
             let weapon = this.createWeaponBox(128, 96);
             this.world.registerRigidEntity(weapon);
             let player = this.createPlayer();

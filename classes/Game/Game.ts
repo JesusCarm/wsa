@@ -23,6 +23,14 @@ module WSA {
             this.world.registerRigidEntity(box);            
             let box2 = this.createBox(64,64);
             this.world.registerRigidEntity(box2);
+            let box3 = this.createBox(96,32);
+            this.world.registerRigidEntity(box3); 
+            let box4 = this.createBox(128,128);
+            this.world.registerRigidEntity(box4);            
+            let box5 = this.createBox(128,160);
+            this.world.registerRigidEntity(box5);
+            let box6 = this.createBox(160,160);
+            this.world.registerRigidEntity(box6);
             let weapon = this.createWeaponBox(128,96);
             this.world.registerRigidEntity(weapon);
             let player = this.createPlayer();

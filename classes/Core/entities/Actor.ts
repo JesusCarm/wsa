@@ -32,12 +32,13 @@ module WSA {
         abstract getNewState(progress: number)
         placeOnTheGrid(){
             if(this.v.equals(Vector2.ZERO)) return;
-            let diffPos = window.game.grid.positionActor(this.shape.pos, this.v, this);
-            if(diffPos){
-                this.v = new Vector2(diffPos.dx, diffPos.dy);
+            window.game.grid.positionActor(this.shape.pos, this.v, this);
+            // let diffPos = window.game.grid.positionActor(this.shape.pos, this.v, this);
+            // if(diffPos){
+            //     this.v = new Vector2(diffPos.dx, diffPos.dy);
                 
-                console.log(this.v);
-            }
+            //     console.log(this.v);
+            // }
         }
         
     }
