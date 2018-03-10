@@ -242,6 +242,7 @@ var WSA;
             this.vector2 = new WSA.Vector2();
         }
         emptyActorsGrid() {
+            this.actorsGrid = this.createEmptyGrid();
         }
         positionStaticElement(pos, rigidEntity) {
             let x = pos.getX(), y = pos.getY();
@@ -249,25 +250,39 @@ var WSA;
             let y1 = y >= 32 ? Math.floor(y / 32) : 0;
             this.addElementToGrid(this.grid, x1, y1, rigidEntity);
         }
-        positionActor(pos, v, actor) {
-            let v2 = pos.add(pos, v);
+        positionActor(pos, v, actor, moving) {
+            let v2 = this.vector2.add(pos, v);
             let actorArea = {
                 x: v2.x / 32,
                 y: v2.y / 32
             };
             let ax = Math.floor(actorArea.x), ay = Math.floor(actorArea.y);
-            let offset = {
-                x: actorArea.x - ax,
-                y: actorArea.y - ay
-            };
-            let populatedAreas = this.getPopulatedAreas(ax, ay, offset);
-            if (populatedAreas.length) {
-                let closest = this.getClosestArea(actor, populatedAreas);
-                this.resolveCollision(actor, closest.pop());
+            if (moving) {
+                let offset = {
+                    x: actorArea.x - ax,
+                    y: actorArea.y - ay
+                };
+                let populatedAreas = this.getPopulatedAreas(ax, ay, offset);
                 if (populatedAreas.length) {
-                    this.positionActor(actor.shape.pos, actor.v, actor);
+                    let closest = this.getClosestArea(actor, populatedAreas);
+                    this.resolveCollision(actor, closest.pop());
+                    if (populatedAreas.length) {
+                        this.positionActor(actor.shape.pos, actor.v, actor, true);
+                    }
+                    v2 = this.vector2.add(pos, actor.v);
+                    actorArea = {
+                        x: v2.x / 32,
+                        y: v2.y / 32
+                    };
+                    ax = Math.floor(actorArea.x);
+                    ay = Math.floor(actorArea.y);
                 }
             }
+            this.setActorPosition(actor, ax, ay);
+        }
+        setActorPosition(actor, ax, ay) {
+            this.actorsGrid[ax] = [];
+            this.actorsGrid[ax][ay] = actor;
         }
         getPopulatedAreas(ax, ay, offset) {
             let populatedAreas = [];
@@ -495,8 +510,13 @@ var WSA;
         set colliding(colliding) {
             this._colliding = colliding;
         }
-        updateRigidBodyCoords(bounds) {
-            this.rigidBody.bounds = bounds;
+        updateRigidBodyCoords(pos) {
+            this.rigidBody.bounds = {
+                l: pos.x,
+                r: pos.x + this.rigidBody.width,
+                t: pos.y,
+                b: pos.y + this.rigidBody.height
+            };
         }
     }
     WSA.RigidEntity = RigidEntity;
@@ -551,6 +571,7 @@ var WSA;
             this.loop = (timestamp) => {
                 this.progress = (timestamp - this.lastRender) / 16;
                 this.eraseCanvas();
+                this.resetActorPositions();
                 this.getNewState();
                 //this.resolveCollisions();
                 this.update();
@@ -603,6 +624,9 @@ var WSA;
                 entity.draw();
             });
         }
+        resetActorPositions() {
+            window.game.grid.emptyActorsGrid();
+        }
         registerRigidEntity(entity) {
             this.rigidEntities.push(entity);
         }
@@ -646,23 +670,16 @@ var WSA;
 var WSA;
 (function (WSA) {
     class Actor extends WSA.RigidEntity {
-        constructor(rigidBody, ctx, construct) {
+        constructor(rigidBody, shape) {
             super(rigidBody);
             this.v = new WSA.Vector2(0, 0);
             this.hasRigidBody = true;
             this.vHelper = new WSA.Vector2();
             this.velocity = 5;
-            this.shape = new WSA.Rect(ctx, construct);
+            this.shape = shape; //new Rect(ctx, construct);
         }
-        placeOnTheGrid() {
-            if (this.v.equals(WSA.Vector2.ZERO))
-                return;
-            window.game.grid.positionActor(this.shape.pos, this.v, this);
-            // let diffPos = window.game.grid.positionActor(this.shape.pos, this.v, this);
-            // if(diffPos){
-            //     this.v = new Vector2(diffPos.dx, diffPos.dy);
-            //     console.log(this.v);
-            // }
+        placeOnTheGrid(moving) {
+            window.game.grid.positionActor(this.shape.pos, this.v, this, moving);
         }
     }
     WSA.Actor = Actor;
@@ -697,12 +714,7 @@ var WSA;
             this.shape.draw();
         }
         update() {
-            this.updateRigidBodyCoords({
-                l: this.shape.pos.x,
-                r: this.shape.pos.x + this.shape.width,
-                t: this.shape.pos.y,
-                b: this.shape.pos.y + this.shape.height
-            });
+            this.updateRigidBodyCoords(this.shape.pos);
         }
         resolveCollision() {
         }
@@ -747,8 +759,47 @@ var WSA;
                 this.ctx.stroke();
             }
         }
+        update() { }
     }
     WSA.Rect = Rect;
+})(WSA || (WSA = {}));
+var WSA;
+(function (WSA) {
+    class Sprite {
+        constructor(options) {
+            this.frameIndex = 0;
+            this.tickCount = 0;
+            this.pos = options.pos;
+            this.context = options.context;
+            this.width = options.width;
+            this.height = options.height;
+            this.image = options.image;
+            this.ticksPerFrame = options.ticksPerFrame || 0;
+            this.numberOfFrames = options.numberOfFrames || 1;
+        }
+        update() {
+            this.tickCount += 1;
+            if (this.tickCount > this.ticksPerFrame) {
+                this.tickCount = 0;
+                // If the current frame index is in range
+                if (this.frameIndex < this.numberOfFrames - 1) {
+                    // Go to the next frame
+                    this.frameIndex += 1;
+                }
+                else {
+                    this.frameIndex = 0;
+                }
+            }
+        }
+        ;
+        draw() {
+            // Draw the animation
+            let frameWidth = this.width / this.numberOfFrames;
+            this.context.drawImage(this.image, 3 + (this.frameIndex * this.width), 0, this.width, this.height, this.pos.x, this.pos.y, this.width, this.height);
+        }
+        ;
+    }
+    WSA.Sprite = Sprite;
 })(WSA || (WSA = {}));
 /// <reference path="../Core/engine/World.ts" />
 /// <reference path="../Core/rigidBody/RigidBody.ts" />
@@ -781,19 +832,25 @@ var WSA;
             this.world.engine.start();
         }
         createPlayer() {
-            let playerConstruct = {
-                // x: 0,
-                // y: 50,
-                pos: new WSA.Vector2(0, 0),
-                width: 32,
-                height: 32,
-                fillStyle: "green"
-            };
             let playerBody = new WSA.RigidBody(WSA.rigidBodyType.entity, [WSA.rigidBodyType.weapons, WSA.rigidBodyType.wall], {
                 width: 32,
                 height: 32,
             });
-            return new WSA.Platform.Player(new WSA.Keyboard(), this.canvas.getContext(), playerConstruct, playerBody, 100);
+            return new WSA.Platform.Player(new WSA.Keyboard(), this.canvas.getContext(), playerBody, 100, this.getPlayerSprite());
+        }
+        getPlayerSprite() {
+            let monsterImg = new Image();
+            let sprite = new WSA.Sprite({
+                pos: new WSA.Vector2(0, 0),
+                context: this.canvas.getContext(),
+                width: 32,
+                height: 40,
+                image: monsterImg,
+                numberOfFrames: 3,
+                ticksPerFrame: 12
+            });
+            monsterImg.src = "sprites/metalslug.png";
+            return sprite;
         }
         createBox(x, y) {
             let boxConstruct = {
@@ -838,11 +895,10 @@ var WSA;
     var Platform;
     (function (Platform) {
         class Player extends WSA.Actor {
-            constructor(controller, ctx, construct, rigidBody, life) {
-                super(rigidBody, ctx, construct);
+            constructor(controller, ctx, rigidBody, life, shape) {
+                super(rigidBody, shape);
                 this.controller = controller;
                 this.ctx = ctx;
-                //this.debugFunction();
                 this.controller.init();
                 this.life = life;
                 this.isJumping = false;
@@ -850,23 +906,13 @@ var WSA;
             }
             getNewState(progress) {
                 let pressedKeys = this.controller.getKeys();
-                if (this.debugging) {
-                    this.v.x = parseInt(this.debugControls.left.value);
-                    this.v.y = parseInt(this.debugControls.top.value);
-                    // this.resetInputs(); 
-                }
-                else {
-                    this.inputVector(pressedKeys, progress);
-                }
+                this.inputVector(pressedKeys, progress);
                 if (WSA.Vector2.ZERO.equals(this.v)) {
                     this.isStatic = true;
                 }
-                this.placeOnTheGrid();
-                //this.saveState();
-                // this.inputVector(pressedKeys,progress);
+                this.placeOnTheGrid(this.isStatic);
             }
             draw() {
-                this.shape.draw();
                 if (this.intersection) {
                     let rectConstruct = {
                         pos: this.intersection,
@@ -877,6 +923,7 @@ var WSA;
                     let intersection = new WSA.Rect(this.ctx, rectConstruct);
                     intersection.draw();
                 }
+                this.shape.draw();
             }
             resolveCollision(targetEntity) {
                 if (targetEntity.rigidBody.bodyType === WSA.rigidBodyType.wall) {
@@ -900,12 +947,8 @@ var WSA;
             }
             update() {
                 this.updateShapePosition();
-                this.updateRigidBodyCoords({
-                    l: this.shape.pos.x,
-                    r: this.shape.pos.x + this.shape.width,
-                    t: this.shape.pos.y,
-                    b: this.shape.pos.y + this.shape.height
-                });
+                this.updateRigidBodyCoords(this.shape.pos);
+                this.shape.update();
             }
             inputVector(pressedKeys, progress) {
                 // user attempt to move the object
@@ -919,27 +962,7 @@ var WSA;
                     this.v.y = -3 * p;
             }
             updateShapePosition() {
-                if (this.debugging) {
-                    this.shape.pos = new WSA.Vector2(parseInt(this.debugControls.left.value), parseInt(this.debugControls.top.value));
-                }
-                else {
-                    this.shape.pos = this.shape.pos.add(this.v);
-                }
-            }
-            debugFunction() {
-                this.debugging = true;
-                this.debugControls = {
-                    top: document.getElementById("top"),
-                    left: document.getElementById("left"),
-                    bottom: document.getElementById("bottom"),
-                    right: document.getElementById("right")
-                };
-            }
-            resetInputs() {
-                this.debugControls.left.value = "0";
-                this.debugControls.top.value = "0";
-                this.debugControls.right.value = "0";
-                this.debugControls.bottom.value = "0";
+                this.shape.pos = this.shape.pos.add(this.v);
             }
         }
         Platform.Player = Player;

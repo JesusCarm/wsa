@@ -39,17 +39,27 @@ module WSA {
         }
 
         private createPlayer(){
-            let playerConstruct: IRectangleConstruct = {
-                // x: 0,
-                // y: 50,
-                pos: new Vector2(0,0),
-                width: 32,
-                height: 32,
-                fillStyle: "green"};
+
             let playerBody = new RigidBody(rigidBodyType.entity, [rigidBodyType.weapons, rigidBodyType.wall],{
                 width: 32,
                 height: 32,});  
-            return new WSA.Platform.Player(new WSA.Keyboard(), this.canvas.getContext(), playerConstruct, playerBody, 100);
+            return new WSA.Platform.Player(new WSA.Keyboard(), this.canvas.getContext(), playerBody, 100, this.getPlayerSprite());
+        }
+        private getPlayerSprite(){
+            let monsterImg = new Image();
+
+            let sprite = new Sprite({
+                pos: new Vector2(0,0),
+                context: this.canvas.getContext(),
+                width: 32,
+                height: 40,
+                image: monsterImg,
+                numberOfFrames: 3,
+                ticksPerFrame: 12
+            });
+
+            monsterImg.src = "sprites/metalslug.png";
+            return sprite;
         }
         private createBox(x,y){
             let boxConstruct: IRectangleConstruct = {

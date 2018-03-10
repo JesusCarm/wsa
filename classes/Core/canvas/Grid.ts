@@ -2,7 +2,8 @@
 module WSA {
     export interface IGrid {
         positionStaticElement(pos: Vector2, rigidEntity: IRigidEntity)
-        positionActor(pos: Vector2, v: Vector2, actor: IActor): {dx: number, dy: number}
+        positionActor(pos: Vector2, v: Vector2, actor: IActor, moving: boolean): {dx: number, dy: number}
+        emptyActorsGrid()
     }
     export class Grid {
         private actorsGrid: Array<IActor >[];
@@ -14,8 +15,9 @@ module WSA {
             this.actorsGrid = this.createEmptyGrid();
             this.vector2 = new Vector2();
         }
-        emptyActorsGrid(){
 
+        emptyActorsGrid(){
+            this.actorsGrid = this.createEmptyGrid();
         }
 
         positionStaticElement(pos: Vector2, rigidEntity: IRigidEntity){
@@ -26,29 +28,44 @@ module WSA {
             this.addElementToGrid(this.grid, x1,y1,rigidEntity);
         }
 
-        positionActor(pos: Vector2, v: Vector2, actor: IActor){
-            let v2 = pos.add(pos,v);
+        positionActor(pos: Vector2, v: Vector2, actor: IActor, moving: boolean){            
+            let v2 = this.vector2.add(pos,v);
             let actorArea = {
                 x: v2.x / 32,
                 y: v2.y /32
             };
             let ax = Math.floor(actorArea.x),
                 ay = Math.floor(actorArea.y);
-            let offset = {
-                x: actorArea.x - ax,
-                y: actorArea.y - ay
-            }
-
-            let populatedAreas = this.getPopulatedAreas(ax,ay,offset);
-          
-            if(populatedAreas.length){
-                let closest = this.getClosestArea(actor, populatedAreas);
-                this.resolveCollision(actor, closest.pop());
-                if(populatedAreas.length){
-                    this.positionActor(actor.shape.pos, actor.v, actor);
+            if(moving){
+                let offset = {
+                    x: actorArea.x - ax,
+                    y: actorArea.y - ay
                 }
-            }            
+                let populatedAreas = this.getPopulatedAreas(ax,ay,offset);
+              
+                if(populatedAreas.length){
+                    let closest = this.getClosestArea(actor, populatedAreas);
+                    this.resolveCollision(actor, closest.pop());
+                    if(populatedAreas.length){
+                        this.positionActor(actor.shape.pos, actor.v, actor, true);
+                    }
+                    v2 = this.vector2.add(pos, actor.v);
+                    actorArea = {
+                        x: v2.x / 32,
+                        y: v2.y /32
+                    };
+                    ax = Math.floor(actorArea.x);
+                    ay = Math.floor(actorArea.y);
+                }
+            } 
+            this.setActorPosition(actor, ax, ay);     
         }
+
+        private setActorPosition(actor: IActor, ax:number, ay: number){
+            this.actorsGrid[ax] = [];
+            this.actorsGrid[ax][ay] = actor;
+        }
+
         private getPopulatedAreas(ax:number, ay: number, offset: {x: number, y: number}):IRigidEntity[] {
             let populatedAreas:IRigidEntity[] = [];
             this.getPopulatedArea(ax,ay,populatedAreas);

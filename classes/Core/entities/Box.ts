@@ -19,12 +19,7 @@ module WSA {
         }
 
         update():void{
-            this.updateRigidBodyCoords({
-                l: this.shape.pos.x,
-                r: this.shape.pos.x + this.shape.width,
-                t: this.shape.pos.y,
-                b: this.shape.pos.y + this.shape.height
-            });
+            this.updateRigidBodyCoords(this.shape.pos);
         }
 
         resolveCollision(){

@@ -12,6 +12,7 @@ module WSA {
     export interface IRectangle extends IRectangleConstruct{
         pos: Vector2
         draw(): void
+        update()
     }
 
     export class Rect implements IRectangle {        
@@ -48,5 +49,6 @@ module WSA {
                 this.ctx.stroke();
             }   
         }
+        public update(){}
     }
 }

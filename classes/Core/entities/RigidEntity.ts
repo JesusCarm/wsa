@@ -47,8 +47,13 @@ module WSA {
             this._colliding = colliding;
         }
 
-        protected updateRigidBodyCoords(bounds: IBodyBounds){
-            this.rigidBody.bounds = bounds;
+        protected updateRigidBodyCoords(pos: Vector2){
+            this.rigidBody.bounds = {
+                l: pos.x,
+                r: pos.x + this.rigidBody.width,
+                t: pos.y,
+                b: pos.y + this.rigidBody.height
+            };
         }
         
     }

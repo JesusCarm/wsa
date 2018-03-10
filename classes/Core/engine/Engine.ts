@@ -36,6 +36,7 @@ module WSA {
         loop = (timestamp: number): void => {
             this.progress = (timestamp - this.lastRender) / 16;
             this.eraseCanvas();
+            this.resetActorPositions();
             this.getNewState();
             //this.resolveCollisions();
             this.update();
@@ -83,6 +84,10 @@ module WSA {
             this.movingEntities.forEach(entity => {
                 entity.draw();
             });
+        }
+
+        private resetActorPositions(){
+            window.game.grid.emptyActorsGrid();
         }
 
         registerRigidEntity(entity:IRigidEntity){
