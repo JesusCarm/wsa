@@ -3,12 +3,14 @@
         "target": "es6",
         "module": "amd",
         "noUnusedLocals": false,
-        "noUnusedParameters": true,
+        "noUnusedParameters": false,
+        "allowUnusedLabels": true,
         "sourceMap": true,
         "outFile": "wsa.js"
     },
     "include": [
-        "classes/**/*.ts"
+        "classes/**/*.ts",
+        "lib/matter-js-0.10.0/matter-js/index.d.ts"
     ],
     "exclude": [
         "node_modules/"

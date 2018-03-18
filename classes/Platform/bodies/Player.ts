@@ -6,7 +6,6 @@ module WSA.Platform {
 
     export interface IPlayer extends IActor {
         life: number
-        isStatic: boolean;
     }
 
     export class Player extends Actor implements IPlayer{

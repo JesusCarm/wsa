@@ -9,7 +9,7 @@ module WSA {
             this.placeOnTheGrid();
         }
         placeOnTheGrid(): void {
-            window.game.grid.positionStaticElement(this.shape.pos, this);
+           // window.game.grid.positionStaticElement(this.shape.pos, this);
         }
     }
 }

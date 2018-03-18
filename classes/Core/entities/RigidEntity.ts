@@ -23,7 +23,7 @@ module WSA {
         constructor(private _rigidBody){
             super();
             //this._targetColliders = null;
-            window.game.world.registerRigidEntity(this);
+            //window.game.world.registerRigidEntity(this);
         }
 
         get rigidBody(): IRigidBody {

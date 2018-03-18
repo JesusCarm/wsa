@@ -27,7 +27,7 @@ module WSA {
         }
         abstract getNewState(progress: number)
         protected placeOnTheGrid(moving: boolean){
-            window.game.grid.positionActor(this.shape.pos, this.v, this, moving);
+           // window.game.grid.positionActor(this.shape.pos, this.v, this, moving);
         }
         
     }

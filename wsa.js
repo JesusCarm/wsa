@@ -489,7 +489,7 @@ var WSA;
             this.hasRigidBody = true;
             this.stateChange = false;
             //this._targetColliders = null;
-            window.game.world.registerRigidEntity(this);
+            //window.game.world.registerRigidEntity(this);
         }
         get rigidBody() {
             return this._rigidBody;
@@ -564,108 +564,260 @@ var WSA;
 var WSA;
 (function (WSA) {
     class Engine {
-        constructor(canvas) {
-            this.canvas = canvas;
+        constructor() {
             this.lastRender = 0;
             this.progress = 0;
-            this.loop = (timestamp) => {
-                this.progress = (timestamp - this.lastRender) / 16;
-                this.eraseCanvas();
-                this.resetActorPositions();
-                this.getNewState();
-                //this.resolveCollisions();
-                this.update();
-                this.draw();
-                this.lastRender = timestamp;
-                window.requestAnimationFrame(this.loop);
-            };
-            this.idCounter = 0;
-            this.entities = [];
-            this.movingEntities = [];
-            this.rigidEntities = [];
-            this.collisionResolver = new WSA.CollisionResolver();
+            this.matter = new WSA.InitMatter();
+            // this.idCounter = 0;
+            // this.entities = [];
+            // this.movingEntities = [];
+            // this.rigidEntities = [];
+            // this.collisionResolver = new CollisionResolver();
         }
         start() {
-            this.initEntities();
-            window.requestAnimationFrame(this.loop);
+            this.initWorldBounds();
+            //this.initEntities();
+            //window.requestAnimationFrame(this.loop)
         }
-        initEntities() {
-            this.entities.forEach(entity => {
-                entity.init();
-            });
-            this.rigidEntities.forEach(entity => {
-                entity.init();
-            });
-            this.movingEntities.forEach(entity => {
-                entity.init();
-            });
+        // loop = (timestamp: number): void => {
+        //     this.progress = (timestamp - this.lastRender) / 16;
+        //     this.eraseCanvas();
+        //     this.resetActorPositions();
+        //     this.getNewState();
+        //     this.resolveCollisions();
+        //     this.update();
+        //     this.draw();
+        //     this.lastRender = timestamp;
+        //     window.requestAnimationFrame(this.loop);
+        // }
+        initWorldBounds() {
+            this.matter.addMatterComposite([
+                // walls
+                Matter.Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
+                Matter.Bodies.rectangle(400, 600, 800, 50, { isStatic: true }),
+                Matter.Bodies.rectangle(800, 300, 50, 600, { isStatic: true }),
+                Matter.Bodies.rectangle(0, 300, 50, 600, { isStatic: true })
+            ]);
         }
-        getNewState() {
-            this.movingEntities && this.movingEntities.forEach((entity) => {
-                entity.getNewState(this.progress);
-            });
-        }
-        update() {
-            this.movingEntities.forEach(entity => {
-                entity.update();
-            });
-        }
-        resolveCollisions() {
-            this.collisionResolver.checkCollisions(this.movingEntities);
-        }
-        draw() {
-            this.entities.forEach(entity => {
-                entity.draw();
-            });
-            this.rigidEntities.forEach(entity => {
-                entity.draw();
-            });
-            this.movingEntities.forEach(entity => {
-                entity.draw();
-            });
-        }
-        resetActorPositions() {
-            window.game.grid.emptyActorsGrid();
-        }
-        registerRigidEntity(entity) {
-            this.rigidEntities.push(entity);
-        }
-        registerMovingEntity(entity) {
-            this.movingEntities.push(entity);
-        }
-        registerEntity(entity) {
-            entity.id = this.idCounter++;
-            this.entities.push(entity);
-        }
-        registerForce(force) {
-            return force;
-        }
-        eraseCanvas() {
-            this.canvas.clear();
+        // private initEntities(): void {
+        //     this.entities.forEach(entity => {
+        //         entity.init();
+        //     });
+        //     this.rigidEntities.forEach(entity => {
+        //         entity.init();
+        //     });
+        //     this.movingEntities.forEach(entity => {
+        //         entity.init();
+        //     });
+        // }
+        // private getNewState():void{
+        //     this.movingEntities && this.movingEntities.forEach((entity: IActor) => {
+        //         entity.getNewState(this.progress);
+        //     });
+        // }
+        // private update(): void {
+        //     this.movingEntities.forEach(entity => {
+        //         entity.update();
+        //     });
+        // }
+        // private resolveCollisions(): void{
+        //     this.collisionResolver.checkCollisions(this.movingEntities);
+        // }
+        // private draw(): void {
+        //     this.entities.forEach(entity => {
+        //         entity.draw();
+        //     });
+        //     this.rigidEntities.forEach(entity => {
+        //         entity.draw();
+        //     });
+        //     this.movingEntities.forEach(entity => {
+        //         entity.draw();
+        //     });
+        // }
+        // private resetActorPositions(){
+        //     window.game.grid.emptyActorsGrid();
+        // }
+        registerBody(body) {
+            this.matter.addMatterComposite(body);
         }
     }
     WSA.Engine = Engine;
 })(WSA || (WSA = {}));
+/// <reference path="../../../lib/matter-js-0.10.0/matter-js/index.d.ts" />
 var WSA;
 (function (WSA) {
-    class World {
-        constructor(canvas) {
-            this.engine = new WSA.Engine(canvas);
+    class InitMatter {
+        constructor() {
+            this.Engine = Matter.Engine;
+            this.Render = Matter.Render;
+            this.Runner = Matter.Runner;
+            this.Composites = Matter.Composites;
+            //Common = Matter.Common,
+            this.MouseConstraint = Matter.MouseConstraint;
+            this.Mouse = Matter.Mouse;
+            this.World = Matter.World;
+            this.Bodies = Matter.Bodies;
+            // create engine
+            this.engine = this.Engine.create(),
+                this.world = this.engine.world;
+            // create renderer
+            this.render = this.Render.create({
+                element: document.body,
+                engine: this.engine,
+                options: {
+                    width: 800,
+                    height: 600,
+                }
+            });
+            this.Render.run(this.render);
+            // create loop
+            this.loop = new WSA.Loop();
+            // this.runner = this.Runner.create({});
+            // this.Runner.run(this.runner, this.engine);
+            this.loop.run(this.engine);
+            this.canvas = this.render.canvas;
         }
-        registerEntity(entity) {
-            this.engine.registerEntity(entity);
+        addMatterComposite(bodies) {
+            this.World.add(this.world, bodies);
         }
-        registerForce(force) {
-            force;
-        }
-        registerRigidEntity(entity) {
-            this.engine.registerRigidEntity(entity);
-        }
-        registerMovingEntity(entity) {
-            this.engine.registerMovingEntity(entity);
+        stop() {
+            Matter.Render.stop(this.render);
+            this.loop.stop();
         }
     }
-    WSA.World = World;
+    WSA.InitMatter = InitMatter;
+})(WSA || (WSA = {}));
+var WSA;
+(function (WSA) {
+    var _requestAnimationFrame, _cancelAnimationFrame;
+    if (typeof window !== 'undefined') {
+        _requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+        _cancelAnimationFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame;
+    }
+    if (!_requestAnimationFrame) {
+        var _frameTimeout;
+        _requestAnimationFrame = function (callback) {
+            _frameTimeout = setTimeout(function () {
+                callback(window.performance.now());
+            }, 1000 / 60);
+        };
+        _cancelAnimationFrame = function () {
+            clearTimeout(_frameTimeout);
+        };
+    }
+    class Loop {
+        constructor(options) {
+            this.render = (time) => {
+                this.frameRequestId = _requestAnimationFrame(this.render);
+                if (time && this.enabled) {
+                    this.tick(time);
+                }
+            };
+            this.fps = 60;
+            this.correction = 1;
+            this.deltaSampleSize = 60;
+            this.counterTimestamp = 0;
+            this.frameCounter = 0;
+            this.deltaHistory = [];
+            this.timePrev = null;
+            this.timeScalePrev = 1;
+            this.frameRequestId = null;
+            this.isFixed = false;
+            this.enabled = true;
+            if (options) {
+                for (const key in options) {
+                    if (options.hasOwnProperty(key)) {
+                        if (options.hasOwnProperty(key)) {
+                            this[key] = options[key];
+                        }
+                    }
+                }
+            }
+            this.delta = this.delta || 1000 / this.fps;
+            this.deltaMin = this.deltaMin || 1000 / this.fps;
+            this.deltaMax = this.deltaMax || 1000 / (this.fps * 0.5);
+            this.fps = 1000 / this.delta;
+        }
+        run(engine) {
+            this.engine = engine;
+            this.render();
+        }
+        ;
+        tick(time) {
+            var timing = this.engine.timing, correction = 1, delta;
+            // create an event object
+            var event = {
+                timestamp: timing.timestamp
+            };
+            Matter.Events.trigger(this, 'beforeTick');
+            if (this.isFixed) {
+                // fixed timestep
+                delta = this.delta;
+            }
+            else {
+                // dynamic timestep based on wall clock between calls
+                delta = (time - this.timePrev) || this.delta;
+                this.timePrev = time;
+                // optimistically filter delta over a few frames, to improve stability
+                this.deltaHistory.push(delta);
+                this.deltaHistory = this.deltaHistory.slice(-this.deltaSampleSize);
+                delta = Math.min.apply(null, this.deltaHistory);
+                // limit delta
+                delta = delta < this.deltaMin ? this.deltaMin : delta;
+                delta = delta > this.deltaMax ? this.deltaMax : delta;
+                // correction for delta
+                correction = delta / this.delta;
+                // update this.engine timing object
+                this.delta = delta;
+            }
+            // time correction for time scaling
+            if (this.timeScalePrev !== 0)
+                correction *= timing.timeScale / this.timeScalePrev;
+            if (timing.timeScale === 0)
+                correction = 0;
+            this.timeScalePrev = timing.timeScale;
+            this.correction = correction;
+            // fps counter
+            this.frameCounter += 1;
+            if (time - this.counterTimestamp >= 1000) {
+                this.fps = this.frameCounter * ((time - this.counterTimestamp) / 1000);
+                this.counterTimestamp = time;
+                this.frameCounter = 0;
+            }
+            Matter.Events.trigger(this, 'tick');
+            // Events.trigger(this.engine, 'tick', event); // @deprecated
+            // // if world has been modified, clear the render scene graph
+            // if (this.engine.world.isModified 
+            //     && this.engine.render
+            //     && this.engine.render.controller
+            //     && this.engine.render.controller.clear) {
+            //     this.engine.render.controller.clear(this.engine.render); // @deprecated
+            // }
+            // update
+            Matter.Events.trigger(this, 'beforeUpdate');
+            Matter.Engine.update(this.engine, delta, correction);
+            Matter.Events.trigger(this, 'afterUpdate');
+            // render
+            // @deprecated
+            // if (this.engine.render && this.engine.render.controller) {
+            //     Events.trigger(this, 'beforeRender', event);
+            //     Events.trigger(this.engine, 'beforeRender', event); // @deprecated
+            //     this.engine.render.controller.world(this.engine.render);
+            //     Events.trigger(this, 'afterRender', event);
+            //     Events.trigger(this.engine, 'afterRender', event); // @deprecated
+            // }
+            Matter.Events.trigger(this, 'afterTick');
+        }
+        stop() {
+            _cancelAnimationFrame(this.frameRequestId);
+        }
+        ;
+        start() {
+            this.run(this.engine);
+        }
+        ;
+    }
+    WSA.Loop = Loop;
 })(WSA || (WSA = {}));
 var WSA;
 (function (WSA) {
@@ -679,7 +831,7 @@ var WSA;
             this.shape = shape; //new Rect(ctx, construct);
         }
         placeOnTheGrid(moving) {
-            window.game.grid.positionActor(this.shape.pos, this.v, this, moving);
+            // window.game.grid.positionActor(this.shape.pos, this.v, this, moving);
         }
     }
     WSA.Actor = Actor;
@@ -691,7 +843,7 @@ var WSA;
             this.placeOnTheGrid();
         }
         placeOnTheGrid() {
-            window.game.grid.positionStaticElement(this.shape.pos, this);
+            // window.game.grid.positionStaticElement(this.shape.pos, this);
         }
     }
     WSA.RigidStaticEntity = RigidStaticEntity;
@@ -801,82 +953,45 @@ var WSA;
     }
     WSA.Sprite = Sprite;
 })(WSA || (WSA = {}));
-/// <reference path="../Core/engine/World.ts" />
+/// <reference path="../Core/engine/Engine.ts" />
 /// <reference path="../Core/rigidBody/RigidBody.ts" />
 var WSA;
 (function (WSA) {
     class Game {
+        //canvas: ICanvas;
         constructor(body, size) {
-            this.canvas = new WSA.Canvas(size);
-            this.world = new WSA.World(this.canvas);
-            this.grid = new WSA.Grid(size);
-            this.canvas.init(body);
+            //this.canvas = new WSA.Canvas(size);
+            this.engine = new WSA.Engine();
+            //this.grid = new WSA.Grid(size);
+            //this.canvas.init(body);
         }
         init() {
-            let box = this.createBox(64, 32);
-            this.world.registerRigidEntity(box);
-            let box2 = this.createBox(64, 64);
-            this.world.registerRigidEntity(box2);
-            let box3 = this.createBox(96, 32);
-            this.world.registerRigidEntity(box3);
-            let box4 = this.createBox(128, 128);
-            this.world.registerRigidEntity(box4);
-            let box5 = this.createBox(128, 160);
-            this.world.registerRigidEntity(box5);
-            let box6 = this.createBox(160, 160);
-            this.world.registerRigidEntity(box6);
-            let weapon = this.createWeaponBox(128, 96);
-            this.world.registerRigidEntity(weapon);
+            // let box = this.createBox(64,32);
+            // this.engine.registerRigidEntity(box);            
+            // let box2 = this.createBox(64,64);
+            // this.engine.registerRigidEntity(box2);
+            // let box3 = this.createBox(96,32);
+            // this.engine.registerRigidEntity(box3); 
+            // let box4 = this.createBox(128,128);
+            // this.engine.registerRigidEntity(box4);            
+            // let box5 = this.createBox(128,160);
+            // this.engine.registerRigidEntity(box5);
+            // let box6 = this.createBox(160,160);
+            // this.engine.registerRigidEntity(box6);
+            // let weapon = this.createWeaponBox(128,96);
+            // this.engine.registerRigidEntity(weapon);
+            // let player = this.createPlayer();
+            // this.engine.registerMovingEntity(player);
             let player = this.createPlayer();
-            this.world.registerMovingEntity(player);
-            this.world.engine.start();
+            this.engine.start();
         }
         createPlayer() {
-            let playerBody = new WSA.RigidBody(WSA.rigidBodyType.entity, [WSA.rigidBodyType.weapons, WSA.rigidBodyType.wall], {
-                width: 32,
-                height: 32,
-            });
-            return new WSA.Platform.Player(new WSA.Keyboard(), this.canvas.getContext(), playerBody, 100, this.getPlayerSprite());
-        }
-        getPlayerSprite() {
-            let monsterImg = new Image();
-            let sprite = new WSA.Sprite({
-                pos: new WSA.Vector2(0, 0),
-                context: this.canvas.getContext(),
-                width: 32,
-                height: 40,
-                image: monsterImg,
-                numberOfFrames: 3,
-                ticksPerFrame: 12
-            });
-            monsterImg.src = "sprites/metalslug.png";
-            return sprite;
-        }
-        createBox(x, y) {
-            let boxConstruct = {
-                // x: 50,
-                // y: 50,
-                pos: new WSA.Vector2(x, y),
-                width: 32,
-                height: 32,
-                fillStyle: "blue"
-            };
-            let boxBody = new WSA.RigidBody(WSA.rigidBodyType.wall, [], { width: 32,
-                height: 32 });
-            return new WSA.Box(this.canvas.getContext(), boxConstruct, boxBody);
-        }
-        createWeaponBox(x, y) {
-            let boxConstruct = {
-                // x: 100,
-                // y: 100,
-                pos: new WSA.Vector2(x, y),
-                width: 32,
-                height: 32,
-                fillStyle: "red"
-            };
-            let boxBody = new WSA.RigidBody(WSA.rigidBodyType.weapons, [], { width: 32,
-                height: 32 });
-            return new WSA.Box(this.canvas.getContext(), boxConstruct, boxBody);
+            let player = Matter.Bodies.rectangle(400, 60, 50, 50);
+            Matter.Body.setAngle(player, 90);
+            Matter.Body.setVelocity(player, { x: 1, y: 0 });
+            this.engine.registerBody(player);
+            return player;
+            //return new WSA.Platform.Player(new WSA.Keyboard(), this.canvas.getContext(), playerBody, 100, this.getPlayerSprite());
         }
     }
     WSA.Game = Game;
