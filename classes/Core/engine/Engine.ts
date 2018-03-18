@@ -1,54 +1,30 @@
 /// <reference path="../canvas/Canvas.ts" />
 module WSA {
     export interface IEngine{
-        // update(): void
-        // resolveCollisions(): void
-        // draw(): void
-        //loop(timestamp: number): void
+        context: CanvasRenderingContext2D
         start():void
+        registerActor(actor: IActor)
         registerBody(body:Matter.Body)
-        // registerEntity(entity: IEntity):void
-        // registerMovingEntity(entity: IEntity):void
-        // registerRigidEntity(entity:IRigidEntity): void
     }
 
     export class Engine implements IEngine {
         private lastRender: number = 0;
         private progress: number = 0;
         private entities: IEntity[];
-        private collisionResolver: ICollisionResolver;
         private idCounter: number;
         private movingEntities: IEntity[];
         private rigidEntities: IRigidEntity[];
         private matter: InitMatter;
+        context: CanvasRenderingContext2D;
 
         constructor(){
             this.matter = new InitMatter();
-            // this.idCounter = 0;
-            // this.entities = [];
-            // this.movingEntities = [];
-            // this.rigidEntities = [];
-            // this.collisionResolver = new CollisionResolver();
+            this.context = this.matter.canvas.getContext("2d");
         }
 
         start(): void {
             this.initWorldBounds();            
-            //this.initEntities();
-            //window.requestAnimationFrame(this.loop)
         }
-
-        // loop = (timestamp: number): void => {
-        //     this.progress = (timestamp - this.lastRender) / 16;
-        //     this.eraseCanvas();
-        //     this.resetActorPositions();
-        //     this.getNewState();
-        //     this.resolveCollisions();
-        //     this.update();
-        //     this.draw();
-        //     this.lastRender = timestamp;
-            
-        //     window.requestAnimationFrame(this.loop);
-        // }
 
         private initWorldBounds(){
             this.matter.addMatterComposite([
@@ -59,74 +35,12 @@ module WSA {
                 Matter.Bodies.rectangle(0, 300, 50, 600, { isStatic: true })
             ])
         }
-
-        // private initEntities(): void {
-        //     this.entities.forEach(entity => {
-        //         entity.init();
-        //     });
-        //     this.rigidEntities.forEach(entity => {
-        //         entity.init();
-        //     });
-        //     this.movingEntities.forEach(entity => {
-        //         entity.init();
-        //     });
-        // }
-
-        // private getNewState():void{
-        //     this.movingEntities && this.movingEntities.forEach((entity: IActor) => {
-        //         entity.getNewState(this.progress);
-        //     });
-        // }
-
-        // private update(): void {
-        //     this.movingEntities.forEach(entity => {
-        //         entity.update();
-        //     });
-        // }
-
-        // private resolveCollisions(): void{
-        //     this.collisionResolver.checkCollisions(this.movingEntities);
-        // }
-
-        // private draw(): void {
-        //     this.entities.forEach(entity => {
-        //         entity.draw();
-        //     });
-        //     this.rigidEntities.forEach(entity => {
-        //         entity.draw();
-        //     });
-        //     this.movingEntities.forEach(entity => {
-        //         entity.draw();
-        //     });
-        // }
-
-        // private resetActorPositions(){
-        //     window.game.grid.emptyActorsGrid();
-        // }
-
+        registerActor(actor: IActor){
+            this.matter.addMatterComposite(actor.body);
+        }
         registerBody(body:Matter.Body){
             this.matter.addMatterComposite(body);
         }
 
-        // registerRigidEntity(entity:IRigidEntity){
-        //     this.rigidEntities.push(entity);
-        // }
-
-        // registerMovingEntity(entity: IEntity):void{
-        //     this.movingEntities.push(entity);
-        // }
-
-        // registerEntity(entity: IEntity):void {
-        //     entity.id = this.idCounter++;
-        //     this.entities.push(entity);
-        // }
-
-        // registerForce(force){
-        //     return force;
-        // }
-
-        // eraseCanvas(): void{
-        //     this.canvas.clear();
-        // }
     }
 }

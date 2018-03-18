@@ -9,8 +9,8 @@ module WSA {
   }
 
   export interface IKeyboard {
-    init(): void
-    getKeys(): IPressedKeys
+    init(onKeyPress: Function): void
+    getKeys();
   }
   //WASD input
   enum keyMap {
@@ -24,6 +24,7 @@ module WSA {
   export class Keyboard implements IKeyboard {
 
     private pressedKeys: IPressedKeys;
+    private onKeyPress: Function;
     constructor(){
       this.pressedKeys = {
         left: false,
@@ -34,20 +35,24 @@ module WSA {
       }
     }
 
-    init() {
-      window.addEventListener("keydown", this.keydown, false)
-      window.addEventListener("keyup", this.keyup, false)
+    init(onKeyPress: Function) {
+      this.onKeyPress = onKeyPress;
+      window.addEventListener("keydown", this.keydown, false);
+      window.addEventListener("keyup", this.keyup, false);
     }
     getKeys() {
-      return this.pressedKeys;
+      this.onKeyPress(this.pressedKeys);
+      //return this.pressedKeys;
     }
     private keydown = (event: KeyboardEvent) => {
       var key = keyMap[event.keyCode]
       this.pressedKeys[key] = true
+      this.getKeys();
     }
     private keyup = (event:KeyboardEvent) => {
       var key = keyMap[event.keyCode]
-      this.pressedKeys[key] = false
+      this.pressedKeys[key] = false;
+      this.getKeys();
     }
   }
 

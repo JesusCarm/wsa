@@ -27,7 +27,16 @@ module WSA {
 
         constructor(){
             // create engine
-            this.engine = this.Engine.create(),
+            let noGravity: any = Matter.Vector.create(0,0);
+            noGravity.scale = 0;
+
+            let wroldDef: Matter.IWorldDefinition = {
+                gravity: noGravity
+            }
+            let engineDef: Matter.IEngineDefinition = {
+                world: Matter.World.create(wroldDef)
+            }
+            this.engine = this.Engine.create(engineDef),
             this.world = this.engine.world;
 
             // create renderer
