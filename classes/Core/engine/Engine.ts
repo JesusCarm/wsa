@@ -27,7 +27,7 @@ module WSA {
         }
 
         private initWorldBounds(){
-            this.matter.addMatterComposite([
+            this.matter.registerComposite([
                 // walls
                 Matter.Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
                 Matter.Bodies.rectangle(400, 600, 800, 50, { isStatic: true }),
@@ -36,10 +36,10 @@ module WSA {
             ])
         }
         registerActor(actor: IActor){
-            this.matter.addMatterComposite(actor.body);
+            this.matter.registerActor(actor);
         }
         registerBody(body:Matter.Body){
-            this.matter.addMatterComposite(body);
+            this.matter.registerComposite(body);
         }
 
     }

@@ -83,7 +83,7 @@ var WSA;
             this.initWorldBounds();
         }
         initWorldBounds() {
-            this.matter.addMatterComposite([
+            this.matter.registerComposite([
                 // walls
                 Matter.Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
                 Matter.Bodies.rectangle(400, 600, 800, 50, { isStatic: true }),
@@ -92,10 +92,10 @@ var WSA;
             ]);
         }
         registerActor(actor) {
-            this.matter.addMatterComposite(actor.body);
+            this.matter.registerActor(actor);
         }
         registerBody(body) {
-            this.matter.addMatterComposite(body);
+            this.matter.registerComposite(body);
         }
     }
     WSA.Engine = Engine;
@@ -132,6 +132,8 @@ var WSA;
                 options: {
                     width: 800,
                     height: 600,
+                    wireframes: false
+                    //showAngleIndicator: true
                 }
             });
             this.Render.run(this.render);
@@ -142,8 +144,15 @@ var WSA;
             this.loop.run(this.engine);
             this.canvas = this.render.canvas;
         }
-        addMatterComposite(bodies) {
+        registerComposite(bodies) {
             this.World.add(this.world, bodies);
+        }
+        registerActor(actor) {
+            this.registerComposite(actor.body);
+            actor.body;
+            this.render.
+                DOING;
+            // REGISTER SPRITE TO THE LOOP
         }
         stop() {
             Matter.Render.stop(this.render);
@@ -283,6 +292,29 @@ var WSA;
         ;
     }
     WSA.Loop = Loop;
+})(WSA || (WSA = {}));
+/// <reference path="../../../lib/matter-js-0.10.0/matter-js/index.d.ts" />
+var WSA;
+(function (WSA) {
+    let Layer;
+    (function (Layer) {
+        Layer[Layer["background"] = 0] = "background";
+        Layer[Layer["floor"] = 1] = "floor";
+        Layer[Layer["ground"] = 2] = "ground";
+        Layer[Layer["foreground"] = 3] = "foreground";
+        Layer[Layer["air"] = 4] = "air";
+    })(Layer = WSA.Layer || (WSA.Layer = {}));
+    ;
+    class Renderer {
+        constructor() {
+        }
+        update() {
+        }
+        registerEntity(entity, z) {
+            this.entities[z].push(entity);
+        }
+    }
+    WSA.Renderer = Renderer;
 })(WSA || (WSA = {}));
 var WSA;
 (function (WSA) {
@@ -490,30 +522,8 @@ var WSA;
 })(WSA || (WSA = {}));
 var WSA;
 (function (WSA) {
-    class Actor {
-        constructor() {
-            this.v = Matter.Vector.create(0, 0);
-            this.velocity = 5;
-        }
-    }
-    WSA.Actor = Actor;
-})(WSA || (WSA = {}));
-var WSA;
-(function (WSA) {
     class Entity {
         constructor() {
-            this.hasRigidBody = false;
-            this.oldState = {
-                hasRigidBody: []
-            };
-        }
-        // abstract getNewState(progress:number)
-        init() { }
-        get id() {
-            return this._id;
-        }
-        set id(id) {
-            this._id = id;
         }
     }
     WSA.Entity = Entity;
@@ -562,44 +572,45 @@ var WSA;
 var WSA;
 (function (WSA) {
     class RigidEntity extends WSA.Entity {
-        //private _targetColliders: IRigidBody;        
-        constructor(_rigidBody) {
+        constructor(engine, sprite) {
             super();
-            this._rigidBody = _rigidBody;
-            this.hasRigidBody = true;
-            this.stateChange = false;
-            //this._targetColliders = null;
-            //window.game.world.registerRigidEntity(this);
+            this.engine = engine;
+            this.sprite = sprite;
         }
-        get rigidBody() {
-            return this._rigidBody;
+        setBody(bodyConstrut) {
+            this.body = Matter.Bodies.rectangle(bodyConstrut.x, bodyConstrut.y, bodyConstrut.width, bodyConstrut.height, bodyConstrut.options);
         }
-        set rigidBody(rigidBody) {
-            this._rigidBody = rigidBody;
+        setSprite(sprite) {
+            this.sprite = sprite;
         }
-        // get targetCollider():IRigidBody {
-        //     return this._targetColliders;
-        // }
-        // setTargetCollider(targetBody: IRigidBody){
-        //     this.colliding = true;
-        //     this._targetColliders = targetBody;
-        // }
-        get colliding() {
-            return this._colliding;
+        get body() {
+            return this._body;
         }
-        set colliding(colliding) {
-            this._colliding = colliding;
-        }
-        updateRigidBodyCoords(pos) {
-            this.rigidBody.bounds = {
-                l: pos.x,
-                r: pos.x + this.rigidBody.width,
-                t: pos.y,
-                b: pos.y + this.rigidBody.height
-            };
+        set body(rigidBody) {
+            this._body = rigidBody;
         }
     }
     WSA.RigidEntity = RigidEntity;
+})(WSA || (WSA = {}));
+/// <reference path="../../Core/entities/RigidEntity.ts" />
+var WSA;
+(function (WSA) {
+    class Actor extends WSA.RigidEntity {
+        constructor(engine, bodyConstrut, sprite) {
+            super(engine, sprite);
+            this.engine = engine;
+            this.v = Matter.Vector.create(0, 0);
+            this.velocity = bodyConstrut.velocity;
+            this.setBody(bodyConstrut);
+            this.setSprite(sprite);
+        }
+        setBody(bodyConstrut) {
+            super.setBody(bodyConstrut);
+            Matter.Body.setAngle(this.body, bodyConstrut.angle);
+            Matter.Body.setVelocity(this.body, this.v);
+        }
+    }
+    WSA.Actor = Actor;
 })(WSA || (WSA = {}));
 var WSA;
 (function (WSA) {
@@ -612,6 +623,19 @@ var WSA;
         }
     }
     WSA.RigidStaticEntity = RigidStaticEntity;
+})(WSA || (WSA = {}));
+/// <reference path="../../Core/controllers/Keyboard.ts" />
+/// <reference path="../../Core/engine/Vector/Vector2.ts" />
+/// <reference path="../../Core/entities/RigidEntity.ts" />
+var WSA;
+(function (WSA) {
+    class Wall extends WSA.RigidEntity {
+        constructor(engine, sprite) {
+            super(engine);
+            this.engine = engine;
+        }
+    }
+    WSA.Wall = Wall;
 })(WSA || (WSA = {}));
 var WSA;
 (function (WSA) {
@@ -698,12 +722,20 @@ var WSA;
             this.engine.registerActor(player);
         }
         createPlayer() {
-            return new WSA.Platform.Player(this.engine, new WSA.Keyboard(), 100, this.getPlayerSprite());
+            let body = {
+                angle: 0,
+                velocity: 5,
+                x: 400,
+                y: 100,
+                width: 32,
+                height: 32
+            };
+            return new WSA.Platform.Player(this.engine, new WSA.Keyboard(), 100, body, this.getPlayerSprite(400, 100));
         }
-        getPlayerSprite() {
+        getPlayerSprite(x, y) {
             let monsterImg = new Image();
             let sprite = new WSA.Sprite({
-                pos: new WSA.Vector2(0, 0),
+                pos: new WSA.Vector2(x, y),
                 context: this.engine.context,
                 width: 32,
                 height: 40,
@@ -731,33 +763,20 @@ var WSA;
     var Platform;
     (function (Platform) {
         class Player extends WSA.Actor {
-            constructor(engine, controller, life, shape) {
-                super();
+            constructor(engine, controller, life, bodyConstruct, sprite) {
+                super(engine, bodyConstruct, sprite);
                 this.engine = engine;
                 this.controller = controller;
                 this.inputVector = (pressedKeys) => {
                     // user attempt to move the object
-                    let p = 0.1 * this.velocity;
+                    let p = 0.3 * this.velocity;
                     p = Math.min(p, 1);
                     this.v.x = pressedKeys.left ? -1 * p : pressedKeys.right ? 1 * p : 0;
                     this.v.y = pressedKeys.up ? -1 * p : pressedKeys.down ? 1 * p : 0;
                     Matter.Body.setVelocity(this.body, this.v);
                 };
-                this.setBody();
                 this.controller.init(this.inputVector);
                 this.life = life;
-                this.update();
-            }
-            setBody() {
-                this.body = Matter.Bodies.rectangle(400, 60, 50, 50);
-                Matter.Body.setAngle(this.body, 90);
-                Matter.Body.setVelocity(this.body, this.v);
-            }
-            draw() {
-            }
-            resolveCollision(targetEntity) {
-            }
-            update() {
             }
         }
         Platform.Player = Player;

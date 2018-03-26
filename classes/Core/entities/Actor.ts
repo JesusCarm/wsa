@@ -1,26 +1,32 @@
+/// <reference path="../../Core/entities/RigidEntity.ts" />
 module WSA {
-    export interface IActor {
-        //getNewState(progress: number)
-        shape: Sprite | Rect;
+    export interface IActor extends IRigidEntity{
         id: number;
         v: Matter.Vector;
-        body: Matter.Body
+        velocity: number
+    }
+    export interface IActorBodyContruct extends IRigidBodyConstruct {
+        angle: number
+        velocity: number       
     }
 
-    export abstract class Actor implements IActor{
-        body: Matter.Body
-
-        shape: Sprite | Rect;
+    export abstract class Actor extends RigidEntity implements IActor{
         id: number;
-        v:Matter.Vector;
-        protected velocity: number;
+        v: Matter.Vector;
+        velocity: number;
 
-        constructor(){   
+        constructor(protected engine: IEngine, bodyConstrut: IActorBodyContruct, sprite: Sprite){   
+            super(engine, sprite);
             this.v = Matter.Vector.create(0,0);
-            this.velocity = 5;
+            this.velocity = bodyConstrut.velocity;
+            this.setBody(bodyConstrut);
+            this.setSprite(sprite);
         }
-        abstract setBody()
-        //abstract getNewState(progress: number)
+        setBody(bodyConstrut: IActorBodyContruct){
+            super.setBody(bodyConstrut);
+            Matter.Body.setAngle(this.body, bodyConstrut.angle);
+            Matter.Body.setVelocity(this.body, this.v);
+        }
         
     }
 }

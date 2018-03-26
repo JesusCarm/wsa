@@ -559,6 +559,23 @@ declare namespace Matter {
         * @default 1
         */
         yScale: number;
+        /**
+         * A `Number` that defines the offset in the x-axis for the sprite (normalised by texture width).
+         *
+         * @property render.sprite.xOffset
+         * @type number
+         * @default 0
+         */
+        xOffset?: number;
+
+        /**
+         * A `Number` that defines the offset in the y-axis for the sprite (normalised by texture height).
+         *
+         * @property render.sprite.yOffset
+         * @type number
+         * @default 0
+         */
+        yOffset?: number;
     }
 
     /**

@@ -46,6 +46,7 @@ module WSA {
                 options: {
                     width: 800,
                     height: 600,
+                    wireframes: false
                     //showAngleIndicator: true
                 }
             });
@@ -59,8 +60,16 @@ module WSA {
             this.canvas = this.render.canvas;
         }
 
-        addMatterComposite (bodies: any){
+        registerComposite (bodies: any){
             this.World.add(this.world, bodies);
+        }
+
+        registerActor(actor: IActor){
+            this.registerComposite(actor.body);
+            actor.body;
+            this.render.
+            DOING
+            // REGISTER SPRITE TO THE LOOP
         }
         
         stop() {
